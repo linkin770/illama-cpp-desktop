@@ -9,10 +9,10 @@
 ## ✨ 功能特性
 
 ### 🚀 核心功能
-- **内置 llama.cpp 推理引擎**: 开箱即用，无需手动编译
 - **OpenAI 兼容接口**: 标准 `/v1/chat/completions` 接口，可接入各类客户端（如 OpenClaw、Claude Code 等）
 - **内置聊天页面**: 支持流式回复、历史对话搜索和管理
 - **系统托盘后台运行**: 窗口最小化后服务继续运行
+- **完整 llama.cpp 集成**: 支持 llama-server 服务管理和配置
 
 ### 🎨 用户体验
 - **白色 / 深色模式一键切换**: 支持亮色和暗色主题
@@ -46,6 +46,22 @@
 
 ## 🚀 快速开始
 
+### 前置准备
+
+**下载 llama.cpp**
+
+由于 llama.cpp 体积较大，本仓库不包含编译产物。请自行下载：
+
+1. 访问 [llama.cpp 官方发布页面](https://github.com/ggml-org/llama.cpp/releases)
+2. 下载 Windows 版本的发布包（如 `llama.cpp-win-cuda.zip`）
+3. 解压后将所有文件复制到项目的 `llama/` 文件夹中
+
+确保 `llama/` 文件夹包含以下关键文件：
+- `llama-server.exe` - 主服务程序
+- `llama.dll` - 核心推理库
+- `ggml*.dll` - ggml 推理库
+- `cublas*.dll` / `cudart*.dll` - CUDA 支持库（GPU版本）
+
 ### 方式一：直接使用（推荐）
 
 1. 下载预编译的发布包
@@ -58,8 +74,11 @@
 
 ```powershell
 # 克隆项目
-git clone <repository-url>
-cd illama-desktop
+git clone https://github.com/linkin770/illama-cpp-desktop.git
+cd illama-cpp-desktop
+
+# 下载 llama.cpp 并解压到 llama/ 文件夹
+# 参考上方"前置准备"步骤
 
 # 安装依赖
 npm install
