@@ -1,0 +1,17 @@
+:root {
+  --bg: #ffffff;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #fafafa;
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --green: #16a34a;
+  --green-soft: #f0fdf4;
+  --green-line: #bbf7d0;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --pending: #ca8a04;
+  --shadow: 0 18px 55px rgba(0, 0, 0, 0.06);
+}

@@ -1,0 +1,116 @@
+.composer-wrap {
+  width: min(820px, 86%);
+  margin: 0 auto;
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.composer {
+  min-height: 112px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+  min-width: 0;
+}
+
+.attach-wrap {
+  position: relative;
+}
+
+.attach-menu {
+  position: absolute;
+  left: 0;
+  top: 48px;
+  bottom: auto;
+  z-index: 25;
+  width: 156px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 16px 38px rgba(18, 22, 17, 0.13);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.attach-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 119;
+  background: transparent;
+}
+
+.attach-menu.floating {
+  position: fixed;
+  z-index: 120;
+  width: 206px;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(18, 22, 17, 0.18);
+}
+
+.attach-menu button {
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  padding: 0 11px;
+}
+
+.attach-menu button:hover {
+  background: #f1f2ee;
+}
+
+.attach-menu button:disabled {
+  cursor: not-allowed;
+  color: #a1a79f;
+  background: transparent;
+}
+
+.attach-menu button:disabled span.menu-icon {
+  opacity: 0.5;
+}
+
+.composer textarea {
+  min-height: 56px;
+  max-height: 118px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--ink);
+  line-height: 1.5;
+  padding: 3px 0;
+}
+
+.model-chip {
+  max-width: 180px;
+  border-radius: 8px;
+  background: #f1f2ee;
+  padding: 8px 10px;
+  color: var(--ink);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.composer-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 12px;
+}

@@ -1,0 +1,64 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+.drag-region {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 122px;
+  height: 40px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  color: #5d635b;
+  font-size: 13px;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.gear-btn,
+.sidebar-toggle,
+.icon-btn,
+.round-btn,
+.send-btn,
+.side-action,
+.history-item,
+.status-card,
+.settings-tabs button,
+.outline-btn,
+.primary-btn,
+.danger-btn,
+.text-btn {
+  -webkit-app-region: no-drag;
+}

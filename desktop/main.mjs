@@ -31,6 +31,7 @@ let runtimeStatus = {
   startedAt: null,
 }
 let logs = []
+let chatAbortController = null
 
 function defaultBaseDir() {
   const candidates = [
@@ -790,17 +791,24 @@ async function buildAttachment(filePath) {
     attachment.text = await readFile(filePath, 'utf8')
   }
 
-  if (attachment.kind === 'pdf' && stat.size <= 20 * 1024 * 1024) {
-    try {
-      const pdfParseModule = await import('pdf-parse/lib/pdf-parse.js')
-      const pdfParseFn = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default || pdfParseModule
-      const pdfBuffer = await readFile(filePath)
-      const pdfData = await pdfParseFn(pdfBuffer)
-      attachment.text = pdfData.text
-      attachment.pageCount = pdfData.numpages
-    } catch (error) {
-      console.error('PDF parsing error:', error)
-      attachment.error = '无法解析PDF文件'
+  if (attachment.kind === 'pdf') {
+    if (stat.size > 100 * 1024 * 1024) {
+      attachment.error = '文件过大（最大支持100MB），请使用PDF阅读器打开并复制文本内容'
+    } else {
+      try {
+        const pdfParseModule = await import('pdf-parse/lib/pdf-parse.js')
+        const pdfParseFn = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default || pdfParseModule
+        const pdfBuffer = await readFile(filePath)
+        const pdfData = await pdfParseFn(pdfBuffer)
+        attachment.text = pdfData.text
+        attachment.pageCount = pdfData.numpages
+        if (attachment.text && attachment.text.length > 50000) {
+          attachment.warning = `PDF内容较长（约${Math.round(attachment.text.length / 500)}词），建议分段提问`
+        }
+      } catch (error) {
+        console.error('PDF parsing error:', error)
+        attachment.error = '无法解析PDF文件，可能是加密或损坏的文件'
+      }
     }
   }
 
@@ -1147,9 +1155,17 @@ function registerIpc() {
           .map(message => {
             const text = String(message.content || '')
             const attachments = Array.isArray(message.attachments) ? message.attachments : []
+            const ctxSize = Number(config.ctx_size) || 32768
+            const maxContentLen = Math.max(0, Math.round((ctxSize - 8192) * 3.5))
             const textBlocks = attachments
               .filter(item => (item.kind === 'text' || item.kind === 'pdf') && item.text)
-              .map(item => `\n\n--- 附件：${item.name} ---\n${item.text}`)
+              .map(item => {
+                const itemText = item.text || ''
+                const truncated = itemText.length > maxContentLen
+                  ? itemText.slice(0, maxContentLen) + `\n\n[...文本过长已截断：原文约${Math.round(itemText.length / 500)}词，当前仅读取前${Math.round(maxContentLen / 500)}词（ctx_size=${ctxSize}）。如需分析剩余内容，可分段提问。]`
+                  : itemText
+                return `\n\n--- 附件：${item.name} ---\n${truncated}`
+              })
             const fileBlocks = attachments
               .filter(item => item.kind !== 'text' && item.kind !== 'image' && item.kind !== 'pdf')
               .map(item => `\n\n[附件：${item.name}，${item.mime || 'file'}，路径：${item.path}]`)
@@ -1223,9 +1239,17 @@ function registerIpc() {
           .map(message => {
             const text = String(message.content || '')
             const attachments = Array.isArray(message.attachments) ? message.attachments : []
+            const ctxSize = Number(config.ctx_size) || 32768
+            const maxContentLen = Math.max(0, Math.round((ctxSize - 8192) * 3.5))
             const textBlocks = attachments
               .filter(item => (item.kind === 'text' || item.kind === 'pdf') && item.text)
-              .map(item => `\n\n--- 附件：${item.name} ---\n${item.text}`)
+              .map(item => {
+                const itemText = item.text || ''
+                const truncated = itemText.length > maxContentLen
+                  ? itemText.slice(0, maxContentLen) + `\n\n[...文本过长已截断：原文约${Math.round(itemText.length / 500)}词，当前仅读取前${Math.round(maxContentLen / 500)}词（ctx_size=${ctxSize}）。如需分析剩余内容，可分段提问。]`
+                  : itemText
+                return `\n\n--- 附件：${item.name} ---\n${truncated}`
+              })
             const fileBlocks = attachments
               .filter(item => item.kind !== 'text' && item.kind !== 'image' && item.kind !== 'pdf')
               .map(item => `\n\n[附件：${item.name}，${item.mime || 'file'}，路径：${item.path}]`)
@@ -1261,7 +1285,12 @@ function registerIpc() {
 
     addLog('chat', `request ${requestId}: ${messages.length} messages -> ${url}`)
 
+    chatAbortController = new AbortController()
+
     let response
+    let result
+    let content = ''
+    let raw = null
     try {
       response = await fetch(url, {
         method: 'POST',
@@ -1275,73 +1304,89 @@ function registerIpc() {
           chat_template_kwargs: parseChatTemplateKwargs(config.chat_template_kwargs) || undefined,
           stream: true,
         }),
-        signal: requestTimeoutSignal(config),
+        signal: chatAbortController.signal,
       })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      addLog('chat', `request failed: ${message}`)
-      throw error
-    }
 
-    if (!response.ok) {
-      const text = await response.text().catch(() => '')
-      const message = `模型接口返回 ${response.status}${text ? `：${text.slice(0, 500)}` : ''}`
-      addLog('chat', `request failed: ${message}`)
-      throw new Error(message)
-    }
+      if (!response.ok) {
+        const text = await response.text().catch(() => '')
+        const message = `模型接口返回 ${response.status}${text ? `：${text.slice(0, 500)}` : ''}`
+        addLog('chat', `request failed: ${message}`)
+        chatAbortController = null
+        throw new Error(message)
+      }
 
-    const reader = response.body?.getReader()
-    if (!reader) {
-      addLog('chat', 'request failed: response body is not a readable stream')
-      throw new Error('模型接口没有返回可读取的流')
-    }
+      const reader = response.body?.getReader()
+      if (!reader) {
+        addLog('chat', 'request failed: response body is not a readable stream')
+        chatAbortController = null
+        throw new Error('模型接口没有返回可读取的流')
+      }
 
-    const decoder = new TextDecoder('utf-8')
-    let buffer = ''
-    let content = ''
-    let raw = null
-    let streamAnnounced = false
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+      let streamAnnounced = false
 
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const parts = buffer.split(/\r?\n\r?\n/)
-      buffer = parts.pop() || ''
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const parts = buffer.split(/\r?\n\r?\n/)
+        buffer = parts.pop() || ''
 
-      for (const part of parts) {
-        const lines = part
-          .split(/\r?\n/)
-          .map(line => line.trim())
-          .filter(line => line.startsWith('data:'))
-          .map(line => line.slice(5).trim())
+        for (const part of parts) {
+          const lines = part
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line.startsWith('data:'))
+            .map(line => line.slice(5).trim())
 
-        for (const line of lines) {
-          if (!line || line === '[DONE]') continue
-          try {
-            const data = JSON.parse(line)
-            raw = data
-            const delta = contentFromStreamPayload(data)
-            if (delta) {
-              if (!streamAnnounced) {
-                addLog('chat', `streaming response for ${requestId}`)
-                streamAnnounced = true
+          for (const line of lines) {
+            if (!line || line === '[DONE]') continue
+            try {
+              const data = JSON.parse(line)
+              raw = data
+              const delta = contentFromStreamPayload(data)
+              if (delta) {
+                if (!streamAnnounced) {
+                  addLog('chat', `streaming response for ${requestId}`)
+                  streamAnnounced = true
+                }
+                content += delta
+                sendEvent({ type: 'chat-stream', requestId, delta })
               }
-              content += delta
-              sendEvent({ type: 'chat-stream', requestId, delta })
+            } catch {
             }
-          } catch {
-            // Ignore malformed stream fragments; llama.cpp can occasionally split aggressively.
           }
         }
       }
+
+      const elapsed = Math.max(0.1, (Date.now() - startedAt) / 1000)
+      const approxTokens = Math.max(1, Math.round(String(content || '').length / 3))
+      addLog('chat', `stream done: ${approxTokens} approx tokens, ${elapsed.toFixed(1)}s`)
+      sendEvent({ type: 'chat-stream', requestId, done: true, content })
+      result = { ok: true, content, raw }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        addLog('chat', `chat stream aborted: ${requestId}`)
+        return { ok: true, content: content || '', raw: null }
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      addLog('chat', `request failed: ${message}`)
+      throw error
+    } finally {
+      chatAbortController = null
     }
 
-    const elapsed = Math.max(0.1, (Date.now() - startedAt) / 1000)
-    const approxTokens = Math.max(1, Math.round(String(content || '').length / 3))
-    addLog('chat', `stream done: ${approxTokens} approx tokens, ${elapsed.toFixed(1)}s`)
-    sendEvent({ type: 'chat-stream', requestId, done: true, content })
-    return { ok: true, content, raw }
+    return result
+})
+
+  ipcMain.handle('llama:chat-abort', async () => {
+    if (chatAbortController) {
+      addLog('chat', 'aborting chat stream')
+      chatAbortController.abort()
+      return { ok: true }
+    }
+    return { ok: false, error: 'no active chat stream' }
   })
 
   ipcMain.handle('llama:pick-file', async (_event, payload) => {

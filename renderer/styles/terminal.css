@@ -1,0 +1,50 @@
+.terminal-list {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.terminal-item {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 9px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.terminal-item:hover {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+
+.terminal-item span,
+.terminal-item strong,
+.terminal-item em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-item span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.terminal-item strong {
+  color: var(--green);
+  font-size: 11px;
+}
+
+.terminal-item em,
+.terminal-empty {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.55;
+}

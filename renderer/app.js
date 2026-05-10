@@ -22,6 +22,15 @@ const settingsTabs = [
 
 const appEl = document.getElementById('app')
 
+// DOM 缓存引用，避免重复查询
+const domCache = {
+  chatFeed: null,
+  chatInput: null,
+  serviceBar: null,
+  sidebar: null,
+  toast: null,
+}
+
 const state = {
   active: 'chat',
   config: null,
@@ -520,6 +529,9 @@ function friendlyErrorMessage(error) {
   if (text.includes('Chat Template Kwargs must be valid JSON')) {
     return `发送失败：Chat Template Kwargs 不是合法 JSON。${text}`
   }
+  if (text.includes('exceed_context_size_error')) {
+    return `发送失败：内容超过模型上下文限制。可在设置中增大“上下文大小 ctx_size”，或减少附件大小。${text}`
+  }
   return text.length > 360 ? `发送失败：${text.slice(0, 360)}...` : `发送失败：${text}`
 }
 
@@ -625,6 +637,16 @@ function startFreshSession() {
   state.view = 'chat'
   state.sidebarPanel = 'chats'
   state.historyMenuId = ''
+  const exists = state.sessions.some(s => s.id === state.currentSessionId)
+  if (!exists) {
+    state.sessions.unshift({
+      id: state.currentSessionId,
+      title: '新聊天',
+      messages: [],
+      updatedAt: Date.now(),
+    })
+    persistSessions()
+  }
 }
 
 function attachmentLabel(kind) {
@@ -1137,8 +1159,8 @@ function renderChat() {
             <span class="model-chip-icon">${renderModelChipIcon()}</span>
             <span class="model-chip-label">${escapeHtml(modelName())}</span>
           </button>
-          <button class="send-btn" type="button" data-action="send-chat" ${state.chatBusy ? 'disabled' : ''}>
-            ${state.chatBusy ? '...' : '↑'}
+          <button class="send-btn ${state.chatBusy ? 'stop-btn' : (state.chatInput.trim() || state.attachments.length ? 'active' : '')}" type="button" data-action="${state.chatBusy ? 'abort-chat' : 'send-chat'}" ${!state.chatBusy && state.chatInput.trim() === '' && state.attachments.length === 0 ? 'disabled' : ''}>
+            ${state.chatBusy ? '■' : '↑'}
           </button>
         </div>
         <div class="composer-hint">按住 Enter 发送，Shift + Enter 换行</div>
@@ -1547,6 +1569,17 @@ function render(options = {}) {
     return
   }
 
+  // 如果是首次渲染，执行全量渲染
+  if (options.fullRender || !domCache.chatFeed) {
+    performFullRender(options)
+    return
+  }
+
+  // 增量更新
+  performIncrementalUpdate(options)
+}
+
+function performFullRender(options = {}) {
   const previousFeed = document.getElementById('chatFeed')
   const previousFeedTop = previousFeed?.scrollTop || 0
   const previousFeedHeight = previousFeed?.scrollHeight || 0
@@ -1587,6 +1620,129 @@ function render(options = {}) {
     <div class="toast ${state.toast ? 'show' : ''}">${escapeHtml(state.toast)}</div>
   `
 
+  // 更新 DOM 缓存
+  domCache.chatFeed = document.getElementById('chatFeed')
+  domCache.chatInput = document.querySelector('[data-chat-input]')
+  domCache.serviceBar = document.querySelector('.service-bar')
+  domCache.sidebar = document.querySelector('.sidebar')
+  domCache.toast = document.querySelector('.toast')
+
+  restoreScrollPosition(options, previousFeed, previousFeedTop, previousFeedHeight, shouldStick)
+  applyDarkMode()
+}
+
+function performIncrementalUpdate(options = {}) {
+  // 更新 Toast
+  if (options.updateToast && domCache.toast) {
+    domCache.toast.textContent = escapeHtml(state.toast)
+    domCache.toast.classList.toggle('show', !!state.toast)
+    return
+  }
+
+  // 更新服务栏状态
+  if (options.updateServiceBar && domCache.serviceBar) {
+    const running = state.status.state === 'running' || state.status.state === 'starting'
+    domCache.serviceBar.innerHTML = `
+      <div class="service-left">
+        <span class="status-dot ${statusClass()}"></span>
+        <span>${statusLabel()} · ${escapeHtml(compactStatusMessage(state.status.message || ''))}</span>
+        <code>${escapeHtml(state.status.url || '')}</code>
+      </div>
+      <div class="service-actions">
+        <button class="outline-btn" type="button" data-action="save" ${state.busy ? 'disabled' : ''}>保存配置</button>
+        <button class="outline-btn" type="button" data-action="health">检查端口</button>
+        ${
+          running
+            ? `<button class="danger-btn" type="button" data-action="stop" ${state.busy ? 'disabled' : ''}>停止服务</button>`
+            : `<button class="primary-btn" type="button" data-action="start" ${state.busy ? 'disabled' : ''}>保存并启动</button>`
+        }
+      </div>
+    `
+    return
+  }
+
+  // 更新侧边栏
+  if (options.updateSidebar && domCache.sidebar) {
+    domCache.sidebar.outerHTML = renderSidebar()
+    domCache.sidebar = document.querySelector('.sidebar')
+    return
+  }
+
+  // 更新聊天输入框内容（保持焦点）
+  if (options.updateChatInput && domCache.chatInput) {
+    const wasFocused = domCache.chatInput === document.activeElement
+    const cursorPos = domCache.chatInput.selectionStart
+    domCache.chatInput.value = escapeHtml(state.chatInput)
+    if (wasFocused) {
+      domCache.chatInput.focus()
+      domCache.chatInput.setSelectionRange(cursorPos, cursorPos)
+    }
+    return
+  }
+
+  // 更新附件区域
+  if (options.updateComposerAttachments) {
+    const composerEl = document.querySelector('.composer')
+    if (composerEl) {
+      const attachmentRow = composerEl.querySelector('.attachment-row')
+      const newAttachmentHtml = renderAttachmentChips(state.attachments, true, 'composer')
+      if (attachmentRow) {
+        attachmentRow.outerHTML = newAttachmentHtml
+      } else if (newAttachmentHtml) {
+        composerEl.insertAdjacentHTML('afterbegin', newAttachmentHtml)
+      }
+    }
+    return
+  }
+
+  // 添加新消息
+  if (options.appendMessage !== undefined) {
+    const index = options.appendMessage
+    const message = state.chatMessages[index]
+    if (message && domCache.chatFeed) {
+      const content = renderMessageContent(message, index)
+      const attachments = renderAttachmentChips(message.attachments || [], false, message.role)
+      const body = message.role === 'user'
+        ? `${attachments}${content ? `<div class="bubble">${content}</div>` : ''}`
+        : `<div class="bubble">${content}</div>${attachments}`
+
+      const article = document.createElement('article')
+      article.className = `message ${escapeHtml(message.role)}`
+      article.dataset.messageIndex = index
+      article.innerHTML = `
+        <div class="avatar">${message.role === 'user' ? '你' : message.role === 'assistant' ? 'll' : 'sys'}</div>
+        <div class="message-body">
+          ${body}
+          ${renderMessageMeta(message)}
+          ${renderMessageActions(index, message)}
+        </div>
+      `
+      domCache.chatFeed.appendChild(article)
+      
+      if (options.jumpToBottom || isNearBottom(domCache.chatFeed)) {
+        domCache.chatFeed.scrollTop = domCache.chatFeed.scrollHeight
+      }
+      return
+    }
+  }
+
+  // 更新消息内容（流式输出时）
+  if (options.updateMessageIndex !== undefined) {
+    updateMessageDom(options.updateMessageIndex)
+    return
+  }
+
+  // 更新暗色模式
+  if (options.updateDarkMode) {
+    applyDarkMode()
+    return
+  }
+
+  // 默认：全量渲染（处理其他未明确的变化）
+  performFullRender(options)
+}
+
+function restoreScrollPosition(options, previousFeed, previousFeedTop, previousFeedHeight, shouldStick) {
   const chatFeed = document.getElementById('chatFeed')
   if (chatFeed) {
     if (options.jumpToBottom) {
@@ -1621,8 +1777,9 @@ function render(options = {}) {
       }
     }, 100)
   }
-  
-  // Toggle dark mode class on body
+}
+
+function applyDarkMode() {
   if (state.darkMode) {
     document.body.classList.add('dark-mode')
   } else {
@@ -1632,11 +1789,11 @@ function render(options = {}) {
 
 function setToast(message) {
   state.toast = message
-  render()
+  render({ updateToast: true })
   window.clearTimeout(setToast.timer)
   setToast.timer = window.setTimeout(() => {
     state.toast = ''
-    render()
+    render({ updateToast: true })
   }, 2800)
 }
 
@@ -1737,11 +1894,26 @@ async function openModelInfo() {
 async function sendChat() {
   const content = state.chatInput.trim()
   if ((!content && state.attachments.length === 0) || state.chatBusy) return
+  state.chatBusy = true
+  updateSendButton()
+
+  const hasImage = state.attachments.some(item => item.kind === 'image')
+  if (hasImage && !state.config?.mmproj) {
+    setToast('请先在设置中配置 mmproj 投影文件，否则图片无法被模型理解。')
+    return
+  }
 
   if (!state.currentSessionId) state.currentSessionId = makeSessionId()
   const attachments = state.attachments
+  
+  // 添加用户消息
+  const userIndex = state.chatMessages.length
   state.chatMessages.push({ role: 'user', content, attachments, createdAt: Date.now() })
+  
   const requestId = `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  
+  // 添加助手消息占位符
+  const assistantIndex = state.chatMessages.length
   state.chatMessages.push({
     role: 'assistant',
     content: '',
@@ -1761,7 +1933,17 @@ async function sendChat() {
   state.chatBusy = true
   state.view = 'chat'
   saveCurrentSession()
-  render()
+  const chatInputEl = document.querySelector('[data-chat-input]')
+  if (chatInputEl) chatInputEl.value = ''
+  updateSendButton()
+  render({ updateComposerAttachments: true, updateSidebar: true })
+  
+  // 使用增量渲染：添加用户消息
+  render({ appendMessage: userIndex, jumpToBottom: true })
+  // 添加助手消息占位符
+  render({ appendMessage: assistantIndex, jumpToBottom: true })
+  // 更新服务栏状态
+  render({ updateServiceBar: true })
 
   try {
     const startedAt = performance.now()
@@ -1794,8 +1976,22 @@ async function sendChat() {
   } finally {
     state.chatBusy = false
     state.streamRequestId = ''
-    render({ preserveChatScroll: true })
+    updateSendButton()
+    render({ updateServiceBar: true })
   }
+}
+
+async function abortChat() {
+  if (!state.chatBusy) return
+  try {
+    await window.llamaDesktop.abortChat()
+  } catch (error) {
+    // Ignore abort errors
+  }
+  state.chatBusy = false
+  state.streamRequestId = ''
+  updateSendButton()
+  render({ updateServiceBar: true })
 }
 
 async function retryMessage(index) {
@@ -1897,8 +2093,6 @@ async function pickAttachment(kind) {
     const picked = await window.llamaDesktop.pickAttachments({ kind })
     if (picked?.length) {
       state.attachments = [...state.attachments, ...picked]
-      state.attachmentMenuOpen = false
-      state.attachmentMenuPosition = null
       const hasImage = picked.some(item => item.kind === 'image')
       const hasLargeImage = picked.some(item => item.kind === 'image' && !item.dataUrl)
       if (hasLargeImage) {
@@ -1908,11 +2102,15 @@ async function pickAttachment(kind) {
       } else {
         setToast(`${attachmentLabel(kind)}已添加`)
       }
-    } else {
-      state.attachmentMenuOpen = false
-      state.attachmentMenuPosition = null
-      render()
     }
+    state.attachmentMenuOpen = false
+    state.attachmentMenuPosition = null
+    const backdrop = document.querySelector('.attach-menu-backdrop')
+    const menu = document.querySelector('.attach-menu')
+    backdrop?.remove()
+    menu?.remove()
+    updateSendButton()
+    render({ updateComposerAttachments: true })
   } catch (error) {
     setToast(error.message || String(error))
   }
@@ -2200,12 +2398,28 @@ appEl.addEventListener('click', event => {
   if (action === 'stop') void stop()
   if (action === 'health') void health()
   if (action === 'send-chat') void sendChat()
+  if (action === 'abort-chat') void abortChat()
 })
+
+function updateSendButton() {
+  const sendBtn = document.querySelector('.send-btn')
+  if (!sendBtn) return
+  
+  const hasContent = state.chatInput.trim() || state.attachments.length
+  const isBusy = state.chatBusy
+  
+  sendBtn.classList.toggle('stop-btn', isBusy)
+  sendBtn.classList.toggle('active', !isBusy && hasContent)
+  sendBtn.disabled = !isBusy && !hasContent
+  sendBtn.textContent = isBusy ? '■' : '↑'
+  sendBtn.dataset.action = isBusy ? 'abort-chat' : 'send-chat'
+}
 
 appEl.addEventListener('input', event => {
   const input = event.target
   if (input.dataset?.chatInput !== undefined) {
     state.chatInput = input.value
+    updateSendButton()
     return
   }
 
