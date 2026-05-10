@@ -114,6 +114,16 @@
   background: var(--green-soft);
 }
 
+.attachment-chip.word {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.attachment-chip.excel {
+  border-color: #107c41;
+  background: #e6f4ea;
+}
+
 .attachment-chip.message-file,
 .message-attachment-row .attachment-chip {
   max-width: min(420px, 100%);

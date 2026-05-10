@@ -292,9 +292,39 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   background: var(--surface-soft);
 }
 
-.attach-menu button span.menu-icon.video {
-  border-radius: 999px;
-  background: #f5efe9;
+.attach-menu button span.menu-icon.image {
+  background: #fef3e2;
+  border-color: #ea8c00;
+}
+
+.attach-menu button span.menu-icon.audio {
+  background: #f3e8ff;
+  border-color: #9333ea;
+}
+
+.attach-menu button span.menu-icon.text {
+  background: #eef2ff;
+  border-color: #3b82f6;
+}
+
+.attach-menu button span.menu-icon.pdf {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+.attach-menu button span.menu-icon.system {
+  background: #e8f5f1;
+  border-color: #0d9488;
+}
+
+.attach-menu button span.menu-icon.word {
+  background: #e8f0fe;
+  border-color: #1a73e8;
+}
+
+.attach-menu button span.menu-icon.excel {
+  background: #e6f4ea;
+  border-color: #107c41;
 }
 
 .send-btn {

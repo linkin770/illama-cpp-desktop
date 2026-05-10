@@ -720,6 +720,11 @@ function mimeForFile(filePath) {
     '.m4a': 'audio/mp4',
     '.ogg': 'audio/ogg',
     '.pdf': 'application/pdf',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.xlsm': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsb': 'application/vnd.ms-excel.sheet.binary.macroEnabled.12',
     '.txt': 'text/plain',
     '.md': 'text/markdown',
     '.json': 'application/json',
@@ -772,6 +777,14 @@ function isPdfLike(filePath) {
   return path.extname(filePath).toLowerCase() === '.pdf'
 }
 
+function isWordLike(filePath) {
+  return path.extname(filePath).toLowerCase() === '.docx'
+}
+
+function isExcelLike(filePath) {
+  return ['.xlsx', '.xlsm', '.xls', '.xlsb'].includes(path.extname(filePath).toLowerCase())
+}
+
 async function buildAttachment(filePath) {
   const stat = await import('node:fs/promises').then(fs => fs.stat(filePath))
   const attachment = {
@@ -779,7 +792,7 @@ async function buildAttachment(filePath) {
     name: path.basename(filePath),
     size: stat.size,
     mime: mimeForFile(filePath),
-    kind: isImageLike(filePath) ? 'image' : isAudioLike(filePath) ? 'audio' : isPdfLike(filePath) ? 'pdf' : isTextLike(filePath) ? 'text' : 'file',
+    kind: isImageLike(filePath) ? 'image' : isAudioLike(filePath) ? 'audio' : isPdfLike(filePath) ? 'pdf' : isWordLike(filePath) ? 'word' : isExcelLike(filePath) ? 'excel' : isTextLike(filePath) ? 'text' : 'file',
   }
 
   if (attachment.kind === 'image' && stat.size <= 10 * 1024 * 1024) {
@@ -809,6 +822,66 @@ async function buildAttachment(filePath) {
         console.error('PDF parsing error:', error)
         attachment.error = '无法解析PDF文件，可能是加密或损坏的文件'
       }
+    }
+  }
+
+  if (attachment.kind === 'word') {
+    try {
+      const mammothModule = await import('mammoth')
+      const mammoth = mammothModule.default || mammothModule
+      const buffer = await readFile(filePath)
+      const result = await mammoth.extractRawText({ buffer })
+      attachment.text = result.value
+      if (!attachment.text || !attachment.text.trim()) {
+        attachment.text = '' // 空文档
+      }
+      if (attachment.text && attachment.text.length > 50000) {
+        attachment.warning = `Word内容较长（约${Math.round(attachment.text.length / 500)}词），建议分段提问`
+      }
+    } catch (error) {
+      console.error('Word parsing error:', error)
+      attachment.error = '无法解析Word文件，可能使用了旧版 .doc 格式（仅支持 .docx）'
+    }
+  }
+
+  if (attachment.kind === 'excel') {
+    try {
+      const XLSXModule = await import('xlsx')
+      const XLSX = XLSXModule.default || XLSXModule
+      const buffer = await readFile(filePath)
+      const workbook = XLSX.read(buffer, { type: 'buffer' })
+      const texts = []
+      let totalRows = 0
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName]
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        if (jsonData.length > 0) {
+          totalRows += jsonData.length
+          texts.push(`--- 工作表：${sheetName}（${jsonData.length}行）---`)
+          texts.push(
+            jsonData.slice(0, 200).map(row =>
+              Object.entries(row)
+                .filter(([, v]) => String(v).trim())
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(' | ')
+            ).join('\n')
+          )
+          if (jsonData.length > 200) {
+            texts.push(`... 剩余 ${jsonData.length - 200} 行已省略`)
+          }
+        }
+      }
+      attachment.text = texts.join('\n\n')
+      attachment.sheetCount = workbook.SheetNames.length
+      attachment.totalRows = totalRows
+      if (attachment.text && attachment.text.length > 50000) {
+        attachment.warning = `Excel内容较长（${totalRows}行，${workbook.SheetNames.length}个工作表），建议分段提问`
+      }
+    } catch (error) {
+      console.error('Excel parsing error:', error)
+      const message = error instanceof Error ? error.message : String(error)
+      attachment.error = `无法解析Excel文件（${message}），仅支持 .xlsx/.xlsm/.xls 格式`
+      addLog('desktop', `Excel解析失败：${message}`)
     }
   }
 
@@ -1158,9 +1231,13 @@ function registerIpc() {
             const ctxSize = Number(config.ctx_size) || 32768
             const maxContentLen = Math.max(0, Math.round((ctxSize - 8192) * 3.5))
             const textBlocks = attachments
-              .filter(item => (item.kind === 'text' || item.kind === 'pdf') && item.text)
+              .filter(item => item.kind === 'text' || item.kind === 'pdf' || item.kind === 'word' || item.kind === 'excel')
               .map(item => {
                 const itemText = item.text || ''
+                if (!itemText) {
+                  const reason = item.error ? `文件内容无法提取（${item.error}）` : '文件内容为空'
+                  return `\n\n--- 附件：${item.name} ---\n${reason}`
+                }
                 const truncated = itemText.length > maxContentLen
                   ? itemText.slice(0, maxContentLen) + `\n\n[...文本过长已截断：原文约${Math.round(itemText.length / 500)}词，当前仅读取前${Math.round(maxContentLen / 500)}词（ctx_size=${ctxSize}）。如需分析剩余内容，可分段提问。]`
                   : itemText
@@ -1168,7 +1245,10 @@ function registerIpc() {
               })
             const fileBlocks = attachments
               .filter(item => item.kind !== 'text' && item.kind !== 'image' && item.kind !== 'pdf')
-              .map(item => `\n\n[附件：${item.name}，${item.mime || 'file'}，路径：${item.path}]`)
+              .map(item => {
+                const note = item.error ? `解析失败：${item.error}` : item.warning ? `提示：${item.warning}` : ''
+                return `\n\n[附件：${item.name}，${item.mime || 'file'}${note ? `，${note}` : ''}]`
+              })
             const imageAttachments = attachments.filter(item => item.kind === 'image' && item.dataUrl)
 
             if (imageAttachments.length > 0) {
@@ -1242,9 +1322,13 @@ function registerIpc() {
             const ctxSize = Number(config.ctx_size) || 32768
             const maxContentLen = Math.max(0, Math.round((ctxSize - 8192) * 3.5))
             const textBlocks = attachments
-              .filter(item => (item.kind === 'text' || item.kind === 'pdf') && item.text)
+              .filter(item => item.kind === 'text' || item.kind === 'pdf' || item.kind === 'word' || item.kind === 'excel')
               .map(item => {
                 const itemText = item.text || ''
+                if (!itemText) {
+                  const reason = item.error ? `文件内容无法提取（${item.error}）` : '文件内容为空'
+                  return `\n\n--- 附件：${item.name} ---\n${reason}`
+                }
                 const truncated = itemText.length > maxContentLen
                   ? itemText.slice(0, maxContentLen) + `\n\n[...文本过长已截断：原文约${Math.round(itemText.length / 500)}词，当前仅读取前${Math.round(maxContentLen / 500)}词（ctx_size=${ctxSize}）。如需分析剩余内容，可分段提问。]`
                   : itemText
@@ -1252,7 +1336,10 @@ function registerIpc() {
               })
             const fileBlocks = attachments
               .filter(item => item.kind !== 'text' && item.kind !== 'image' && item.kind !== 'pdf')
-              .map(item => `\n\n[附件：${item.name}，${item.mime || 'file'}，路径：${item.path}]`)
+              .map(item => {
+                const note = item.error ? `解析失败：${item.error}` : item.warning ? `提示：${item.warning}` : ''
+                return `\n\n[附件：${item.name}，${item.mime || 'file'}${note ? `，${note}` : ''}]`
+              })
             const imageAttachments = attachments.filter(item => item.kind === 'image' && item.dataUrl)
 
             if (imageAttachments.length > 0) {
@@ -1416,8 +1503,16 @@ function registerIpc() {
         { name: 'PDF', extensions: ['pdf'] },
         { name: 'All Files', extensions: ['*'] },
       ],
+      document: [
+        { name: 'Word Documents', extensions: ['docx'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+      spreadsheet: [
+        { name: 'Excel Spreadsheets', extensions: ['xlsx', 'xlsm', 'xls', 'xlsb'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
       file: [
-        { name: 'Documents and Images', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'log', 'py', 'js', 'ts', 'tsx', 'html', 'css', 'pdf', 'mp3', 'wav', 'flac', 'm4a', 'ogg', 'png', 'jpg', 'jpeg', 'webp'] },
+        { name: 'Documents and Images', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'log', 'py', 'js', 'ts', 'tsx', 'html', 'css', 'pdf', 'docx', 'xlsx', 'xlsm', 'xls', 'xlsb', 'mp3', 'wav', 'flac', 'm4a', 'ogg', 'png', 'jpg', 'jpeg', 'webp'] },
         { name: 'All Files', extensions: ['*'] },
       ],
     }

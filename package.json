@@ -1,6 +1,6 @@
 {
   "name": "illama-cpp-desktop",
-  "version": "1.1.0",
+  "version": "0.0.20260510",
   "description": "A Windows desktop control panel for running and chatting with a local llama.cpp server.",
   "author": "",
   "license": "MIT",
@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "fs-extra": "^11.2.0",
+    "mammoth": "^1.12.0",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^4.4.168"
+    "pdfjs-dist": "^4.4.168",
+    "xlsx": "^0.18.5"
   }
 }

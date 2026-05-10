@@ -655,6 +655,8 @@ function attachmentLabel(kind) {
     audio: '音频',
     text: '文本',
     pdf: 'PDF',
+    word: 'Word',
+    excel: 'Excel',
     system: '系统',
     mcp: 'MCP',
     file: '文件',
@@ -1172,10 +1174,11 @@ function renderChat() {
 function attachmentMenuItems() {
   return `
     <button type="button" data-action="pick-image"><span class="menu-icon image"></span>图片</button>
-    <button type="button" disabled title="暂不支持视频理解"><span class="menu-icon video"></span>视频文件</button>
     <button type="button" data-action="pick-audio"><span class="menu-icon audio"></span>音频文件</button>
     <button type="button" data-action="pick-text"><span class="menu-icon text"></span>文本文件</button>
     <button type="button" data-action="pick-pdf"><span class="menu-icon pdf"></span>PDF 文件</button>
+    <button type="button" data-action="pick-word"><span class="menu-icon word"></span>Word 文件</button>
+    <button type="button" data-action="pick-excel"><span class="menu-icon excel"></span>Excel 文件</button>
     <button type="button" data-action="insert-system-message"><span class="menu-icon system"></span>系统消息</button>
   `
 }
@@ -1682,14 +1685,18 @@ function performIncrementalUpdate(options = {}) {
 
   // 更新附件区域
   if (options.updateComposerAttachments) {
-    const composerEl = document.querySelector('.composer')
-    if (composerEl) {
-      const attachmentRow = composerEl.querySelector('.attachment-row')
+    const wrapEl = document.querySelector('.composer-wrap')
+    if (wrapEl) {
+      const attachmentRow = wrapEl.querySelector('.attachment-row')
       const newAttachmentHtml = renderAttachmentChips(state.attachments, true, 'composer')
       if (attachmentRow) {
-        attachmentRow.outerHTML = newAttachmentHtml
+        if (newAttachmentHtml) {
+          attachmentRow.outerHTML = newAttachmentHtml
+        } else {
+          attachmentRow.remove()
+        }
       } else if (newAttachmentHtml) {
-        composerEl.insertAdjacentHTML('afterbegin', newAttachmentHtml)
+        wrapEl.insertAdjacentHTML('afterbegin', newAttachmentHtml)
       }
     }
     return
@@ -1899,6 +1906,8 @@ async function sendChat() {
 
   const hasImage = state.attachments.some(item => item.kind === 'image')
   if (hasImage && !state.config?.mmproj) {
+    state.chatBusy = false
+    updateSendButton()
     setToast('请先在设置中配置 mmproj 投影文件，否则图片无法被模型理解。')
     return
   }
@@ -1907,13 +1916,11 @@ async function sendChat() {
   const attachments = state.attachments
   
   // 添加用户消息
-  const userIndex = state.chatMessages.length
   state.chatMessages.push({ role: 'user', content, attachments, createdAt: Date.now() })
   
   const requestId = `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`
   
   // 添加助手消息占位符
-  const assistantIndex = state.chatMessages.length
   state.chatMessages.push({
     role: 'assistant',
     content: '',
@@ -1933,17 +1940,8 @@ async function sendChat() {
   state.chatBusy = true
   state.view = 'chat'
   saveCurrentSession()
-  const chatInputEl = document.querySelector('[data-chat-input]')
-  if (chatInputEl) chatInputEl.value = ''
   updateSendButton()
-  render({ updateComposerAttachments: true, updateSidebar: true })
-  
-  // 使用增量渲染：添加用户消息
-  render({ appendMessage: userIndex, jumpToBottom: true })
-  // 添加助手消息占位符
-  render({ appendMessage: assistantIndex, jumpToBottom: true })
-  // 更新服务栏状态
-  render({ updateServiceBar: true })
+  render({ jumpToBottom: true })
 
   try {
     const startedAt = performance.now()
@@ -2118,7 +2116,14 @@ async function pickAttachment(kind) {
 
 appEl.addEventListener('click', event => {
   const target = event.target.closest('button, .settings-backdrop, .preview-backdrop, .dialog-backdrop, .attach-menu-backdrop')
-  if (!target) return
+  if (!target) {
+    // 点击空白处关闭历史菜单和附件菜单
+    if (state.historyMenuId) {
+      state.historyMenuId = ''
+      render({ preserveChatScroll: true })
+    }
+    return
+  }
 
   const seed = target.dataset.seed
   if (seed) {
@@ -2309,6 +2314,8 @@ appEl.addEventListener('click', event => {
   if (action === 'pick-audio') void pickAttachment('audio')
   if (action === 'pick-text') void pickAttachment('text')
   if (action === 'pick-pdf') void pickAttachment('pdf')
+  if (action === 'pick-word') void pickAttachment('document')
+  if (action === 'pick-excel') void pickAttachment('spreadsheet')
   if (action === 'insert-system-message') {
     if (!state.currentSessionId) state.currentSessionId = makeSessionId()
     state.chatMessages.push({
