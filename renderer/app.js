@@ -1668,7 +1668,6 @@ function performIncrementalUpdate(options = {}) {
   if (options.updateSidebar && domCache.sidebar) {
     domCache.sidebar.outerHTML = renderSidebar()
     domCache.sidebar = document.querySelector('.sidebar')
-    return
   }
 
   // 更新聊天输入框内容（保持焦点）
@@ -1683,7 +1682,7 @@ function performIncrementalUpdate(options = {}) {
     return
   }
 
-  // 更新附件区域
+  // 更新附件区域和输入框
   if (options.updateComposerAttachments) {
     const wrapEl = document.querySelector('.composer-wrap')
     if (wrapEl) {
@@ -1698,6 +1697,9 @@ function performIncrementalUpdate(options = {}) {
       } else if (newAttachmentHtml) {
         wrapEl.insertAdjacentHTML('afterbegin', newAttachmentHtml)
       }
+    }
+    if (domCache.chatInput) {
+      domCache.chatInput.value = state.chatInput
     }
     return
   }
