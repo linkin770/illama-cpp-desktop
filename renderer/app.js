@@ -1914,13 +1914,15 @@ async function sendChat() {
 
   if (!state.currentSessionId) state.currentSessionId = makeSessionId()
   const attachments = state.attachments
-  
+
   // 添加用户消息
+  const userIndex = state.chatMessages.length
   state.chatMessages.push({ role: 'user', content, attachments, createdAt: Date.now() })
-  
+
   const requestId = `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`
-  
+
   // 添加助手消息占位符
+  const assistantIndex = state.chatMessages.length
   state.chatMessages.push({
     role: 'assistant',
     content: '',
@@ -1941,7 +1943,14 @@ async function sendChat() {
   state.view = 'chat'
   saveCurrentSession()
   updateSendButton()
-  render({ jumpToBottom: true })
+  render({ updateComposerAttachments: true, updateSidebar: true })
+
+  // 使用增量渲染：添加用户消息
+  render({ appendMessage: userIndex, jumpToBottom: true })
+  // 添加助手消息占位符
+  render({ appendMessage: assistantIndex, jumpToBottom: true })
+  // 更新服务栏状态
+  render({ updateServiceBar: true })
 
   try {
     const startedAt = performance.now()
