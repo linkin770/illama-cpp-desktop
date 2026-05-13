@@ -165,7 +165,7 @@ function buildBetterModelInfoRows(info) {
   const formatTokens = value => {
     const number = Number(value)
     if (!Number.isFinite(number) || number <= 0) return '未读取'
-    return `${number.toLocaleString('zh-CN')} 个代币`
+    return `${number.toLocaleString('zh-CN')} Tokens`
   }
   const formatParams = value => {
     const number = Number(value)

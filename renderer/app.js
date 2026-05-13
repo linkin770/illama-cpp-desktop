@@ -470,13 +470,17 @@ async function retryMessage(index) {
       messages: buildApiMessages(state.chatMessages.slice(0, -1)),
     })
     const latencyMs = Math.round(performance.now() - startedAt)
-    const tokens = result.raw?.usage?.total_tokens || result.raw?.usage?.completion_tokens || ''
-    const speed = tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''
+    const usage = result.raw?.usage
+    const completionTokens = usage?.completion_tokens || ''
+    const totalTokens = usage?.total_tokens || ''
+    const displayTokens = totalTokens || completionTokens || ''
+    const speedTokens = completionTokens || totalTokens || ''
+    const speed = speedTokens && latencyMs ? `${(Number(speedTokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''
     const assistant = state.chatMessages[state.chatMessages.length - 1]
     if (assistant?.role === 'assistant') {
       const estimatedTokens = estimateTokens(assistant.content || result.content)
-      assistant.content = result.content || assistant.content || `基于“${userMessage.content}”重试后，模型返回了空内容。`
-      assistant.tokens = tokens || estimatedTokens
+      assistant.content = result.content || assistant.content || `基于"${userMessage.content}"重试后，模型返回了空内容。`
+      assistant.tokens = displayTokens || estimatedTokens
       assistant.estimatedTokens = estimatedTokens
       assistant.latencyMs = latencyMs
       assistant.speed = speed || (assistant.tokens ? `${(Number(assistant.tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
@@ -555,13 +559,17 @@ async function sendChat() {
       messages: buildApiMessages(state.chatMessages.slice(0, -1)),
     })
     const latencyMs = Math.round(performance.now() - startedAt)
-    const tokens = result.raw?.usage?.total_tokens || result.raw?.usage?.completion_tokens || ''
-    const speed = tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''
+    const usage = result.raw?.usage
+    const completionTokens = usage?.completion_tokens || ''
+    const totalTokens = usage?.total_tokens || ''
+    const displayTokens = totalTokens || completionTokens || ''
+    const speedTokens = completionTokens || totalTokens || ''
+    const speed = speedTokens && latencyMs ? `${(Number(speedTokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''
     const assistant = state.chatMessages[state.chatMessages.length - 1]
     if (assistant?.role === 'assistant') {
       const estimatedTokens = estimateTokens(assistant.content || result.content)
       assistant.content = result.content || assistant.content || '模型返回了空内容。'
-      assistant.tokens = tokens || estimatedTokens
+      assistant.tokens = displayTokens || estimatedTokens
       assistant.estimatedTokens = estimatedTokens
       assistant.latencyMs = latencyMs
       assistant.speed = speed || (assistant.tokens ? `${(Number(assistant.tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')

@@ -10,9 +10,10 @@ import {
   makeSessionId,
   getCodeBlock,
 } from './messages.js'
-import { localNumberValue } from './utils.js'
+import { localNumberValue, escapeHtml } from './utils.js'
+import { renderModernSettingsContent, currentSettingsTabMeta } from './settings.js'
 
-let tabScrollPositions = {}
+export const tabScrollPositions = {}
 
 export function setupEventListeners() {
   getAppEl().addEventListener('click', async event => {
@@ -52,7 +53,42 @@ export function setupEventListeners() {
       }
       state.active = section
       state.settingsOpen = true
-      window.appRender()
+
+      if (previousSettingsBody && document.querySelector('.settings-panel')) {
+        // 局部更新：只替换设置面板内部，避免全页面重渲染导致滚动位置丢失
+        // 1. 更新 rail tab 高亮
+        document.querySelectorAll('.settings-rail-tabs button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.section === section)
+        })
+        // 2. 更新 settings-head 标题
+        const [, , label, hint] = currentSettingsTabMeta()
+        const settingsHead = document.querySelector('.settings-head')
+        if (settingsHead) {
+          settingsHead.innerHTML = `
+            <div>
+              <span>设置</span>
+              <strong>${escapeHtml(label)}</strong>
+              <em>${escapeHtml(hint)}</em>
+            </div>
+            <button type="button" class="icon-btn" data-action="close-settings">×</button>
+          `
+        }
+        // 3. 更新 settings-body 内容
+        previousSettingsBody.innerHTML = renderModernSettingsContent()
+        // 4. 恢复新 tab 的滚动位置
+        const saved = tabScrollPositions[section]
+        if (saved !== undefined && saved > 0) {
+          previousSettingsBody.scrollTop = saved
+        }
+      } else {
+        // 设置面板尚未渲染，走全量渲染
+        window.appRender()
+        const newSettingsBody = document.querySelector('.settings-body')
+        const saved = tabScrollPositions[section]
+        if (newSettingsBody && saved !== undefined && saved > 0) {
+          newSettingsBody.scrollTop = saved
+        }
+      }
       return
     }
 
@@ -321,6 +357,13 @@ export function setupEventListeners() {
     if (action === 'health') void window.appHealth()
     if (action === 'send-chat') void window.appSendChat()
     if (action === 'abort-chat') void window.appAbortChat()
+    if (action === 'scroll-to-bottom') {
+      const feed = document.querySelector('.chat-feed')
+      if (feed) {
+        feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' })
+        state.stickToBottom = true
+      }
+    }
   })
 
   getAppEl().addEventListener('input', event => {
@@ -377,7 +420,44 @@ export function setupEventListeners() {
     }
   })
 
-  let scrollTimeout = null
+  function updateScrollToBottomBtn() {
+    const feed = document.querySelector('.chat-feed')
+    const btn = document.querySelector('.scroll-to-bottom-btn')
+    if (!feed || !btn) return
+    const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
+    btn.classList.toggle('visible', !nearBottom)
+    // 动态定位：按钮贴在 chat-feed 底部边框上方
+    const feedRect = feed.getBoundingClientRect()
+    const screenRect = feed.closest('.chat-screen')?.getBoundingClientRect()
+    if (screenRect) {
+      btn.style.top = `${feedRect.bottom - screenRect.top - btn.offsetHeight - 8}px`
+    }
+  }
+
+  // 导出供 render.js 调用
+  window.__updateScrollToBottomBtn = updateScrollToBottomBtn
+
+  function handleChatFeedScroll() {
+    const feed = document.querySelector('.chat-feed')
+    if (!feed) return
+    const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
+    if (state.stickToBottom && !nearBottom) {
+      state.stickToBottom = false
+    } else if (!state.stickToBottom && nearBottom) {
+      state.stickToBottom = true
+    }
+    updateScrollToBottomBtn()
+  }
+
+  // 导出供 render.js 在每次渲染后调用
+  window.__attachChatFeedScroll = function attachChatFeedScroll() {
+    const feed = document.querySelector('.chat-feed')
+    if (!feed || feed._scrollListenerAttached) return
+    feed._scrollListenerAttached = true
+    feed.addEventListener('scroll', handleChatFeedScroll, { passive: true })
+  }
+
+
   
   getAppEl().addEventListener('mousedown', event => {
     const target = event.target
@@ -400,6 +480,7 @@ export function setupEventListeners() {
           state.stickToBottom = true
         }
       }
+      updateScrollToBottomBtn()
     }
   })
   
@@ -424,23 +505,7 @@ export function setupEventListeners() {
           state.stickToBottom = true
         }
       }
-    }
-  }, { passive: true })
-  
-  getAppEl().addEventListener('scroll', event => {
-    const target = event.target
-    if (target?.classList?.contains('chat-feed') && !state.isDraggingScrollbar) {
-      if (scrollTimeout) clearTimeout(scrollTimeout)
-      
-      scrollTimeout = setTimeout(() => {
-        const feed = target
-        const isNearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
-        if (state.stickToBottom && !isNearBottom) {
-          state.stickToBottom = false
-        } else if (!state.stickToBottom && isNearBottom) {
-          state.stickToBottom = true
-        }
-      }, 150)
+      updateScrollToBottomBtn()
     }
   }, { passive: true })
 }

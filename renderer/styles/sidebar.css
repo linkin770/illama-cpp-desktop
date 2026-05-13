@@ -8,7 +8,7 @@
 .theme-toggle-btn {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   padding: 10px 12px;
   display: grid;
@@ -35,7 +35,7 @@
 .settings-btn {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   padding: 10px 12px;
   display: grid;
@@ -62,7 +62,7 @@
 .status-card {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   padding: 12px;
   display: grid;

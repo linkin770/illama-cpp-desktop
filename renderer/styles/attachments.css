@@ -18,42 +18,42 @@
 }
 
 .chat-image-attachment {
-  width: min(280px, 52vw);
+  width: min(200px, 40vw);
   max-width: 100%;
-  max-height: 320px;
+  max-height: 200px;
   display: block;
-  border: 0;
-  border-radius: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 0;
   overflow: hidden;
-  background: transparent;
-  box-shadow: none;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .chat-image-attachment img {
   max-width: 100%;
-  max-height: 320px;
+  max-height: 200px;
   width: auto;
   height: auto;
   display: block;
   object-fit: contain;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
 }
 
 .attachment-card.image {
   position: relative;
-  width: 172px;
+  width: 140px;
   max-width: 100%;
   margin: 0;
   border: 1px solid var(--green-line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: #f6faf4;
   overflow: hidden;
-  box-shadow: 0 8px 20px rgba(18, 22, 17, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .attachment-card.image.editable {
-  width: 188px;
+  width: 152px;
 }
 
 .attachment-image-trigger {
@@ -67,7 +67,7 @@
 .attachment-image-trigger img {
   display: block;
   width: 100%;
-  height: 112px;
+  height: 88px;
   object-fit: cover;
   background: #eef2eb;
 }
@@ -96,17 +96,18 @@
 }
 
 .attachment-chip {
-  max-width: min(360px, 100%);
+  max-width: min(280px, 100%);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: #f1f2ee;
-  padding: 6px 8px;
+  padding: 5px 10px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   color: var(--ink);
   font-size: 12px;
   min-width: 0;
+  height: 28px;
 }
 
 .attachment-chip.image {
@@ -126,17 +127,19 @@
 
 .attachment-chip.message-file,
 .message-attachment-row .attachment-chip {
-  max-width: min(420px, 100%);
-  border-color: #e2e4df;
-  background: #f7f8f5;
-  border-radius: 999px;
-  padding: 8px 11px;
+  max-width: min(280px, 100%);
+  border-color: var(--line);
+  background: var(--surface-soft);
+  border-radius: var(--radius-lg);
+  padding: 5px 10px;
+  height: 28px;
 }
 
 .attachment-chip strong {
   color: var(--muted);
   font-size: 11px;
   flex: 0 0 auto;
+  line-height: 1;
 }
 
 .attachment-name {
@@ -156,7 +159,7 @@
   width: 20px;
   height: 20px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.06);
   color: var(--ink);
 }

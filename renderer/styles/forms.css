@@ -35,7 +35,7 @@
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   outline: none;
   background: var(--surface);
   color: var(--ink);
@@ -83,7 +83,7 @@
 
 .switch {
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 14px;
   display: flex;
   justify-content: space-between;
@@ -130,7 +130,7 @@
 
 .checks div {
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 12px 14px;
   display: flex;
   justify-content: space-between;
@@ -179,7 +179,7 @@
 
 .endpoint-box {
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface-soft);
   padding: 14px 16px;
   margin-bottom: 12px;

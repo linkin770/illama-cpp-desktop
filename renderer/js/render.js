@@ -20,6 +20,7 @@ import {
   renderAttachmentMenuPortal,
 } from './components.js'
 import { renderSidebarToggleIcon } from './icons.js'
+import { tabScrollPositions } from './events.js'
 
 const domCache = {
   chatFeed: null,
@@ -28,8 +29,6 @@ const domCache = {
   sidebar: null,
   toast: null,
 }
-
-const tabScrollPositions = {}
 
 function renderSidebarLogs() {
   const logs = state.logs?.slice(-80) || []
@@ -146,7 +145,14 @@ function performFullRender(options = {}) {
   const previousFeedTop = previousFeed?.scrollTop || 0
   const previousFeedHeight = previousFeed?.scrollHeight || 0
   const shouldStick = options.stickToBottom ?? isNearBottom(previousFeed)
-  
+
+  // 保存设置面板当前 tab 的滚动位置（innerHTML 替换会销毁 DOM）
+  const previousSettingsBody = document.querySelector('.settings-body')
+  if (previousSettingsBody && state.settingsOpen) {
+    const tabId = state.active || 'overview'
+    tabScrollPositions[tabId] = previousSettingsBody.scrollTop
+  }
+
   const running = state.status.state === 'running' || state.status.state === 'starting'
   getAppEl().innerHTML = `
     <div class="drag-region">
@@ -190,6 +196,10 @@ function performFullRender(options = {}) {
 
   restoreScrollPosition(options, previousFeed, previousFeedTop, previousFeedHeight, shouldStick)
   applyDarkMode()
+
+  // 全量渲染后：直接在 .chat-feed 上绑定滚动监听，并更新按钮状态和位置
+  if (window.__attachChatFeedScroll) window.__attachChatFeedScroll()
+  if (window.__updateScrollToBottomBtn) window.__updateScrollToBottomBtn()
 }
 
 function performIncrementalUpdate(options = {}) {
@@ -372,15 +382,11 @@ function restoreScrollPosition(options, previousFeed, previousFeedTop, previousF
   const settingsBody = document.querySelector('.settings-body')
   const currentTabId = state.active || 'overview'
   if (settingsBody && state.settingsOpen) {
-    settingsBody.addEventListener('scroll', () => {
-      tabScrollPositions[currentTabId] = settingsBody.scrollTop
-    }, { passive: true })
-    
-    setTimeout(() => {
-      if (tabScrollPositions[currentTabId]) {
-        settingsBody.scrollTop = tabScrollPositions[currentTabId]
-      }
-    }, 100)
+    const savedScroll = tabScrollPositions[currentTabId]
+    if (savedScroll !== undefined && savedScroll > 0) {
+      settingsBody.scrollTop = savedScroll
+      setTimeout(() => { settingsBody.scrollTop = savedScroll }, 0)
+    }
   }
 }
 

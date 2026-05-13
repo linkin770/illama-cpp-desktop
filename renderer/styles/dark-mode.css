@@ -34,6 +34,18 @@
   background: #1a1a1a;
 }
 
+.dark-mode .scroll-to-bottom-btn {
+  background: #2d2d2d;
+  border-color: #4a4a4a;
+  color: #f0f0f0;
+}
+
+.dark-mode .scroll-to-bottom-btn:hover {
+  background: var(--green);
+  color: #1a1a1a;
+  border-color: var(--green);
+}
+
 .dark-mode .message {
   background: #2d2d2d;
 }

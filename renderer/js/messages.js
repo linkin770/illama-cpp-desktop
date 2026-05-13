@@ -243,7 +243,7 @@ function renderMessageMeta(message) {
   const speed = message.speed || (tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
   const pieces = [
     `<span class="model-pill">◇ ${escapeHtml(message.model || modelName())}</span>`,
-    `<span>▦ ${escapeHtml(tokens || 0)} 个代币</span>`,
+    `<span>▦ ${escapeHtml(tokens || 0)} Tokens</span>`,
     latencyMs ? `<span>◷ ${(latencyMs / 1000).toFixed(1)}s</span>` : '<span>◷ 0.0s</span>',
     speed ? `<span>⌁ ${escapeHtml(speed)}</span>` : '',
     message.streaming ? '<span>生成中</span>' : '',

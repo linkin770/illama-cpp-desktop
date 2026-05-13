@@ -188,10 +188,11 @@ function canPreviewCode(language, code) {
 function estimateTokens(text) {
   const value = String(text || '').trim()
   if (!value) return 0
-  const cjk = (value.match(/[\u4e00-\u9fff]/g) || []).length
-  const latin = value.replace(/[\u4e00-\u9fff]/g, '').trim()
+  const cjk = (value.match(/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g) || []).length
+  const latin = value.replace(/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g, '').trim()
   const latinTokens = latin ? latin.split(/\s+/).filter(Boolean).length : 0
-  return Math.max(1, Math.round(cjk * 0.9 + latinTokens * 1.25))
+  const punctuation = (value.match(/[^\w\s\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g) || []).length
+  return Math.max(1, Math.round(cjk * 1.5 + latinTokens * 1.3 + punctuation * 0.5))
 }
 
 function splitThinkingOutput(content) {

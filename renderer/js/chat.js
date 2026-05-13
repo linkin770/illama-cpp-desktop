@@ -27,14 +27,14 @@ function renderChat() {
           const attachments = renderAttachmentChips(message.attachments || [], false, message.role)
           const body = message.role === 'user'
             ? `
-              ${attachments}
+              <div class="attachment-row">${attachments}</div>
               ${content ? `<div class="bubble">${content}</div>` : ''}
             `
             : `
               <div class="bubble">
                 ${content}
               </div>
-              ${attachments}
+              <div class="attachment-row">${attachments}</div>
             `
 
           return `
@@ -59,6 +59,7 @@ function renderChat() {
   return `
     <section class="chat-screen ${state.chatMessages.length ? '' : 'empty-chat'}">
       <div class="chat-feed" id="chatFeed">${messages}</div>
+      <button class="scroll-to-bottom-btn" data-action="scroll-to-bottom" title="回到最新">↓回到最新</button>
       <div class="composer-wrap">
         ${renderAttachmentChips(state.attachments, true, 'composer')}
         <div class="composer">

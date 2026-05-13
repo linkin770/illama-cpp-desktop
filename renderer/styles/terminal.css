@@ -27,7 +27,7 @@
 
 .log-box {
   background: #1e1e1e;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 16px;
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 12px;

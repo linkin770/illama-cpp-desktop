@@ -4,7 +4,7 @@
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--ink);
   display: grid;
@@ -49,7 +49,7 @@
 .side-action {
   height: 38px;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--ink);
   text-align: left;
@@ -109,7 +109,7 @@
   width: 100%;
   min-height: 40px;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--ink);
   text-align: left;
@@ -162,7 +162,7 @@
   width: 100%;
   height: 38px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   outline: none;
   background: var(--surface);
   color: var(--ink);
@@ -184,7 +184,7 @@
 .send-btn,
 .icon-btn {
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
   transition: all 120ms ease;
@@ -259,7 +259,7 @@
 .danger-btn,
 .text-btn {
   min-height: 40px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 0 18px;
   font-size: 13px;
   font-weight: 500;
