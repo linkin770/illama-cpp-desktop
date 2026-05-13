@@ -71,10 +71,123 @@ function splitCodeParts(content) {
   return parts
 }
 
+function renderMarkdown(text) {
+  const value = String(text || '')
+  if (!value.trim()) return ''
+
+  let html = escapeHtml(value)
+
+  // Inline code (must be before bold/italic to avoid conflicts)
+  html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>')
+
+  // Bold + italic: ***text*** or ___text___
+  html = html.replace(/\*{3}(.+?)\*{3}/g, '<strong><em>$1</em></strong>')
+  html = html.replace(/_{3}(.+?)_{3}/g, '<strong><em>$1</em></strong>')
+
+  // Bold: **text** or __text__
+  html = html.replace(/\*{2}(.+?)\*{2}/g, '<strong>$1</strong>')
+  html = html.replace(/_{2}(.+?)_{2}/g, '<strong>$1</strong>')
+
+  // Italic: *text* or _text_ (single, not preceded/followed by *)
+  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+
+  // Strikethrough: ~~text~~
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>')
+
+  // Links: [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+
+  // Process line by line for block elements
+  const lines = html.split('\n')
+  const result = []
+  let inUl = false
+  let inOl = false
+  let inBlockquote = false
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i]
+
+    // Headings: ### text
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      if (inUl) { result.push('</ul>'); inUl = false }
+      if (inOl) { result.push('</ol>'); inOl = false }
+      if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false }
+      const level = headingMatch[1].length
+      result.push(`<h${level}>${headingMatch[2]}</h${level}>`)
+      continue
+    }
+
+    // Horizontal rule: --- or *** or ___
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line.trim())) {
+      if (inUl) { result.push('</ul>'); inUl = false }
+      if (inOl) { result.push('</ol>'); inOl = false }
+      if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false }
+      result.push('<hr />')
+      continue
+    }
+
+    // Unordered list: - text or * text or + text
+    const ulMatch = line.match(/^(\s*)([-*+])\s+(.+)$/)
+    if (ulMatch) {
+      if (inOl) { result.push('</ol>'); inOl = false }
+      if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false }
+      if (!inUl) { result.push('<ul>'); inUl = true }
+      result.push(`<li>${ulMatch[3]}</li>`)
+      continue
+    }
+
+    // Ordered list: 1. text
+    const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/)
+    if (olMatch) {
+      if (inUl) { result.push('</ul>'); inUl = false }
+      if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false }
+      if (!inOl) { result.push('<ol>'); inOl = true }
+      result.push(`<li>${olMatch[3]}</li>`)
+      continue
+    }
+
+    // Blockquote: > text
+    const bqMatch = line.match(/^&gt;\s?(.*)$/)
+    if (bqMatch) {
+      if (inUl) { result.push('</ul>'); inUl = false }
+      if (inOl) { result.push('</ol>'); inOl = false }
+      if (!inBlockquote) { result.push('<blockquote>'); inBlockquote = true }
+      result.push(`<p>${bqMatch[1] || '&nbsp;'}</p>`)
+      continue
+    }
+
+    // Close open lists/blockquotes
+    if (inUl) { result.push('</ul>'); inUl = false }
+    if (inOl) { result.push('</ol>'); inOl = false }
+    if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false }
+
+    // Empty line — skip
+    if (!line.trim()) {
+      continue
+    }
+
+    // Paragraph
+    result.push(`<p>${line}</p>`)
+  }
+
+  // Close any remaining open elements
+  if (inUl) result.push('</ul>')
+  if (inOl) result.push('</ol>')
+  if (inBlockquote) result.push('</blockquote>')
+
+  let output = result.join('')
+
+  // Clean up empty paragraphs
+  output = output.replace(/<p>\s*<\/p>/g, '')
+
+  return output
+}
+
 function renderTextBlock(text) {
   const value = String(text || '')
   if (!value.trim()) return ''
-  return `<div class="markdown-text">${escapeHtml(value)}</div>`
+  return `<div class="markdown-text">${renderMarkdown(value)}</div>`
 }
 
 function highlightCode(code, language) {

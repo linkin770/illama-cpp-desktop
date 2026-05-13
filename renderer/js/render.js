@@ -21,6 +21,7 @@ import {
 } from './components.js'
 import { renderSidebarToggleIcon } from './icons.js'
 import { tabScrollPositions } from './events.js'
+import { refreshChatNav } from './nav.js'
 
 const domCache = {
   chatFeed: null,
@@ -200,6 +201,7 @@ function performFullRender(options = {}) {
   // 全量渲染后：直接在 .chat-feed 上绑定滚动监听，并更新按钮状态和位置
   if (window.__attachChatFeedScroll) window.__attachChatFeedScroll()
   if (window.__updateScrollToBottomBtn) window.__updateScrollToBottomBtn()
+  refreshChatNav()
 }
 
 function performIncrementalUpdate(options = {}) {
@@ -332,6 +334,7 @@ function performIncrementalUpdate(options = {}) {
       if (options.jumpToBottom || isNearBottom(domCache.chatFeed)) {
         domCache.chatFeed.scrollTop = domCache.chatFeed.scrollHeight
       }
+      refreshChatNav()
     }
     return
   }

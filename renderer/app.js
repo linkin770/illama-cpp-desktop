@@ -78,6 +78,7 @@ import {
 } from './js/chat.js'
 import { updateSendButton } from './js/ui.js'
 import { setupEventListeners } from './js/events.js'
+import { initChatNav, refreshChatNav } from './js/nav.js'
 import { 
   render, 
   renderSidebar, 
@@ -391,6 +392,8 @@ async function init() {
     
     render()
     setupEventListeners()
+    initChatNav()
+    refreshChatNav()
   } catch (error) {
     const appElement = getAppEl()
     if (appElement) {

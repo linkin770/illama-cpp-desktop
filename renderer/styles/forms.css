@@ -207,7 +207,7 @@
 .endpoint-box strong {
   font-size: 13px;
   color: var(--ink);
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, "Roboto Mono", monospace;
 }
 
 .settings-note {

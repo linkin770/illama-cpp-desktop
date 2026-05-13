@@ -29,7 +29,7 @@
   background: #1e1e1e;
   border-radius: var(--radius-lg);
   padding: 16px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, "Roboto Mono", monospace;
   font-size: 12px;
   line-height: 1.5;
   color: #d4d4d4;
