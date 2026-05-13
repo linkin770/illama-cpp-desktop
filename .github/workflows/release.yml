@@ -39,6 +39,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Llama.cpp 桌面 ${{ github.ref_name }}
+          body: |
+            ## 更新说明
+
+            ### 🚀 代码重构
+            - **app.js 模块化拆分**: 将主入口文件按功能拆分为多个模块（constants.js、state.js、utils.js、icons.js、messages.js、chat.js、settings.js、components.js、events.js、render.js），提升代码可维护性和可读性
+
+            ### 🐛 Bug 修复
+            - 修复搜索历史对话时输入框失去焦点的问题
+            - 修复中文输入法无法连续输入的问题
+            - 修复搜索结果点击后触发 more 菜单而不是打开对话的问题
+            - 修复发送消息后界面不刷新的问题
+            - 修复图片上传后不立即显示的问题
+
+            ### 🎨 界面优化
+            - 重构渲染逻辑，采用增量更新策略，减少不必要的 DOM 操作
+
           files: |
             dist/illama-v${{ github.ref_name }}p.zip
             dist/illama-v${{ github.ref_name }}p.zip.sha256
