@@ -344,13 +344,22 @@ function performIncrementalUpdate(options = {}) {
 
 function restoreScrollPosition(options, previousFeed, previousFeedTop, previousFeedHeight, shouldStick) {
   const chatFeed = document.getElementById('chatFeed')
-  if (chatFeed && previousFeed && !options.jumpToBottom && !options.preserveChatScroll) {
-    if (shouldStick && previousFeedHeight === previousFeed.scrollHeight) {
+  if (chatFeed) {
+    if (options.jumpToBottom) {
       chatFeed.scrollTop = chatFeed.scrollHeight
-    } else {
-      chatFeed.scrollTop = previousFeedTop
+      scrollOpenRawOutputs(chatFeed)
+    } else if (previousFeed) {
+      if (options.preserveChatScroll) {
+        chatFeed.scrollTop = previousFeedTop
+        scrollOpenRawOutputs(chatFeed)
+      } else if (shouldStick && previousFeedHeight === previousFeed.scrollHeight) {
+        chatFeed.scrollTop = chatFeed.scrollHeight
+        scrollOpenRawOutputs(chatFeed)
+      } else {
+        chatFeed.scrollTop = previousFeedTop
+        scrollOpenRawOutputs(chatFeed)
+      }
     }
-    scrollOpenRawOutputs(chatFeed)
   }
 
   const logBox = document.getElementById('logBox')

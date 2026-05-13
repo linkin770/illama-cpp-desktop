@@ -28,4 +28,6 @@ export const state = {
   settingsOpen: false,
   toast: '',
   darkMode: false,
+  stickToBottom: true,
+  isDraggingScrollbar: false,
 }

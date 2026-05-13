@@ -1,12 +1,13 @@
 .service-bar {
   border-top: 1px solid var(--line);
-  min-height: 70px;
-  padding: 12px 40px;
+  min-height: 72px;
+  padding: 12px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
   min-width: 0;
 }
 
@@ -14,19 +15,22 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .service-left code {
   color: var(--ink);
-  background: #f1f2ee;
-  border-radius: 8px;
-  padding: 5px 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
 }
 
 .service-actions {

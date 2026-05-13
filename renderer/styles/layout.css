@@ -1,9 +1,9 @@
 .app-shell {
   height: 100%;
   display: grid;
-  grid-template-columns: 292px minmax(0, 1fr);
-  background: var(--surface);
-  transition: grid-template-columns 160ms ease;
+  grid-template-columns: 288px minmax(0, 1fr);
+  background: var(--bg);
+  transition: grid-template-columns 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .app-shell.sidebar-collapsed {
@@ -13,19 +13,19 @@
 .sidebar {
   min-height: 0;
   background: var(--sidebar);
-  padding: 24px 20px 18px;
+  padding: 20px 16px 16px;
   display: grid;
   grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   border-right: 1px solid var(--line);
   overflow: hidden;
-  transition: opacity 140ms ease, transform 160ms ease, padding 160ms ease, border-color 160ms ease;
+  transition: opacity 160ms ease, transform 180ms cubic-bezier(0.4, 0, 0.2, 1), padding 180ms ease, border-color 180ms ease;
 }
 
 .app-shell.sidebar-collapsed .sidebar {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-18px);
+  transform: translateX(-16px);
   padding-left: 0;
   padding-right: 0;
   border-right-color: transparent;
@@ -35,20 +35,38 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 56px;
-  margin-bottom: 10px;
+  height: 52px;
+  margin-bottom: 8px;
+  padding: 0 4px;
 }
 
 .app-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
-  background: #141713;
-  color: #dcebd7;
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  color: #f0f0f0;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.app-mark::before {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  clip-path: polygon(60% 0%, 100% 0%, 100% 40%);
+  opacity: 0.9;
+}
+
+.app-mark span {
+  position: relative;
+  z-index: 1;
 }
 
 .brand-copy {
@@ -58,15 +76,19 @@
 }
 
 .brand-copy strong {
-  font-size: 20px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
 }
 
 .brand-copy span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .main-area {
@@ -74,7 +96,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  background:
-    radial-gradient(circle at 60% 36%, rgba(80, 111, 81, 0.045), transparent 28%),
-    var(--surface);
+  background: 
+    radial-gradient(circle at 50% 20%, rgba(245, 243, 239, 0.8), transparent 50%),
+    var(--bg);
 }

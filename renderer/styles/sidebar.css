@@ -2,24 +2,30 @@
   padding-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .theme-toggle-btn {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
-  padding: 11px;
+  padding: 10px 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
+  transition: all 140ms ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
 }
 
 .theme-toggle-btn span:first-child {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .theme-toggle-btn span:last-child {
@@ -29,18 +35,24 @@
 .settings-btn {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
-  padding: 11px;
+  padding: 10px 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
+  transition: all 140ms ease;
+}
+
+.settings-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
 }
 
 .settings-btn span:first-child {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .settings-btn span:last-child {
@@ -50,18 +62,29 @@
 .status-card {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
-  padding: 11px;
+  padding: 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   text-align: left;
+  transition: all 140ms ease;
+}
+
+.status-card:hover {
+  border-color: var(--line-strong);
 }
 
 .status-card strong,
 .status-card em {
   display: block;
+}
+
+.status-card strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .status-card em {
@@ -71,4 +94,5 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-top: 2px;
 }

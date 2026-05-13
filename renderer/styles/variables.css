@@ -1,17 +1,26 @@
 :root {
-  --bg: #ffffff;
-  --sidebar: #ffffff;
+  --bg: #faf8f5;
+  --sidebar: #f5f3ef;
   --surface: #ffffff;
-  --surface-soft: #fafafa;
+  --surface-soft: #faf8f5;
   --ink: #1a1a1a;
   --muted: #6b7280;
-  --line: #e5e7eb;
-  --line-strong: #d1d5db;
+  --line: #e8e5e0;
+  --line-strong: #d4d0c9;
   --green: #16a34a;
   --green-soft: #f0fdf4;
   --green-line: #bbf7d0;
   --danger: #dc2626;
   --danger-soft: #fef2f2;
   --pending: #ca8a04;
+  --pending-soft: #fef3c7;
   --shadow: 0 18px 55px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.08);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --font-family: "SF Pro Display", "PingFang SC", "Microsoft YaHei UI", "Segoe UI", sans-serif;
 }

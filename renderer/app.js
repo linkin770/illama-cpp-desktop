@@ -257,7 +257,7 @@ function localNumberValue(input) {
 
 async function save() {
   state.busy = true
-  render()
+  render({ preserveChatScroll: true })
   try {
     patchFromBackend(await window.llamaDesktop.saveConfig({ config: state.config }))
     setToast('配置已保存')
@@ -265,13 +265,13 @@ async function save() {
     setToast(error.message || String(error))
   } finally {
     state.busy = false
-    render()
+    render({ preserveChatScroll: true })
   }
 }
 
 async function start() {
   state.busy = true
-  render()
+  render({ preserveChatScroll: true })
   try {
     patchFromBackend(await window.llamaDesktop.startServer({ config: state.config }))
     state.active = 'chat'
@@ -280,13 +280,13 @@ async function start() {
     setToast(error.message || String(error))
   } finally {
     state.busy = false
-    render()
+    render({ preserveChatScroll: true })
   }
 }
 
 async function stop() {
   state.busy = true
-  render()
+  render({ preserveChatScroll: true })
   try {
     patchFromBackend(await window.llamaDesktop.stopServer())
     setToast('服务已停止')
@@ -294,7 +294,7 @@ async function stop() {
     setToast(error.message || String(error))
   } finally {
     state.busy = false
-    render()
+    render({ preserveChatScroll: true })
   }
 }
 
@@ -413,7 +413,7 @@ async function init() {
       applyStreamDelta(payload)
       return
     }
-    render()
+    render({ preserveChatScroll: true })
   })
 }
 
@@ -460,7 +460,7 @@ async function retryMessage(index) {
   })
   state.streamRequestId = requestId
   state.chatBusy = true
-  render()
+  render({ jumpToBottom: true })
 
   try {
     const startedAt = performance.now()
@@ -536,6 +536,7 @@ async function sendChat() {
   state.attachmentMenuOpen = false
   state.chatBusy = true
   state.view = 'chat'
+  state.stickToBottom = true
   saveCurrentSession()
   const chatInputEl = document.querySelector('[data-chat-input]')
   if (chatInputEl) chatInputEl.value = ''

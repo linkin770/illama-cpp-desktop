@@ -1,12 +1,25 @@
 {
   "name": "illama-cpp-desktop",
   "version": "0.0.20260513",
-  "description": "A Windows desktop control panel for running and chatting with a local llama.cpp server.",
-  "author": "",
+  "description": "A feature-complete Windows desktop control panel for running and chatting with a local llama.cpp server. Supports OpenAI compatible API, built-in chat interface, system tray background running, and dark/light mode switching.",
+  "author": "linkin770",
   "license": "MIT",
   "type": "module",
   "main": "desktop/main.mjs",
   "productName": "Llama.cpp Desktop",
+  "keywords": [
+    "llama.cpp",
+    "AI",
+    "LLM",
+    "local AI",
+    "desktop app",
+    "Windows",
+    "Electron"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linkin770/illama-cpp-desktop.git"
+  },
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --publish never"

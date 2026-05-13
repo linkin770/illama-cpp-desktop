@@ -376,4 +376,71 @@ export function setupEventListeners() {
       void window.appSendChat()
     }
   })
+
+  let scrollTimeout = null
+  
+  getAppEl().addEventListener('mousedown', event => {
+    const target = event.target
+    if (target?.classList?.contains('chat-feed')) {
+      const rect = target.getBoundingClientRect()
+      if (event.clientX > rect.right - 12) {
+        state.isDraggingScrollbar = true
+        state.stickToBottom = false
+      }
+    }
+  })
+  
+  getAppEl().addEventListener('mouseup', () => {
+    if (state.isDraggingScrollbar) {
+      state.isDraggingScrollbar = false
+      const feed = document.querySelector('.chat-feed')
+      if (feed) {
+        const isNearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
+        if (isNearBottom) {
+          state.stickToBottom = true
+        }
+      }
+    }
+  })
+  
+  getAppEl().addEventListener('mouseleave', () => {
+    if (state.isDraggingScrollbar) {
+      state.isDraggingScrollbar = false
+    }
+  })
+  
+  getAppEl().addEventListener('touchstart', () => {
+    state.isDraggingScrollbar = true
+    state.stickToBottom = false
+  }, { passive: true })
+  
+  getAppEl().addEventListener('touchend', () => {
+    if (state.isDraggingScrollbar) {
+      state.isDraggingScrollbar = false
+      const feed = document.querySelector('.chat-feed')
+      if (feed) {
+        const isNearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
+        if (isNearBottom) {
+          state.stickToBottom = true
+        }
+      }
+    }
+  }, { passive: true })
+  
+  getAppEl().addEventListener('scroll', event => {
+    const target = event.target
+    if (target?.classList?.contains('chat-feed') && !state.isDraggingScrollbar) {
+      if (scrollTimeout) clearTimeout(scrollTimeout)
+      
+      scrollTimeout = setTimeout(() => {
+        const feed = target
+        const isNearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 96
+        if (state.stickToBottom && !isNearBottom) {
+          state.stickToBottom = false
+        } else if (!state.stickToBottom && isNearBottom) {
+          state.stickToBottom = true
+        }
+      }, 150)
+    }
+  }, { passive: true })
 }

@@ -7,15 +7,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.form-grid.single {
+  grid-template-columns: 1fr;
+}
+
 .field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field span {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .field-row {
@@ -29,29 +35,43 @@
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   outline: none;
   background: var(--surface);
   color: var(--ink);
-  padding: 11px 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  transition: all 120ms ease;
 }
 
 .field textarea {
-  min-height: 92px;
+  min-height: 100px;
   resize: vertical;
+  line-height: 1.5;
 }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(80, 111, 81, 0.12);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  border-color: var(--line-strong);
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--muted);
 }
 
 .hint {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .switch-grid {
@@ -63,11 +83,18 @@
 
 .switch {
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 13px;
+  border-radius: var(--radius-md);
+  padding: 14px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 14px;
+  background: var(--surface);
+  transition: all 120ms ease;
+}
+
+.switch:hover {
+  border-color: var(--line-strong);
 }
 
 .switch strong,
@@ -75,17 +102,24 @@
   display: block;
 }
 
+.switch strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
 .switch em {
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
   font-style: normal;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .switch input {
   width: 20px;
   height: 20px;
+  cursor: pointer;
 }
 
 .checks {
@@ -96,19 +130,33 @@
 
 .checks div {
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  background: var(--surface);
+  transition: all 120ms ease;
+}
+
+.checks div:hover {
+  border-color: var(--line-strong);
+}
+
+.checks div span {
+  font-size: 13px;
+  color: var(--ink);
 }
 
 .pill {
   border-radius: 999px;
   border: 1px solid var(--line);
-  padding: 3px 8px;
+  padding: 4px 10px;
   font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
+  transition: all 120ms ease;
 }
 
 .pill.good {
@@ -118,26 +166,57 @@
 }
 
 .pill.warn {
-  border-color: #ead49c;
-  background: #fbf4df;
+  border-color: #fcd34d;
+  background: var(--pending-soft);
   color: var(--pending);
 }
 
 .pill.bad {
-  border-color: #efc8c1;
+  border-color: #fca5a5;
   background: var(--danger-soft);
   color: var(--danger);
 }
 
 .endpoint-box {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
-  padding: 13px 14px;
+  padding: 14px 16px;
   margin-bottom: 12px;
+  transition: all 120ms ease;
+}
+
+.endpoint-box:hover {
+  border-color: var(--line-strong);
 }
 
 .endpoint-box span,
 .endpoint-box strong {
   display: block;
+}
+
+.endpoint-box span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.endpoint-box strong {
+  font-size: 13px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.settings-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--green);
 }

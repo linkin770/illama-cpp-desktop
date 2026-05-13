@@ -144,6 +144,7 @@ function openSession(sessionId) {
   state.sidebarPanel = 'chats'
   state.attachmentMenuOpen = false
   state.historyMenuId = ''
+  state.stickToBottom = true
 }
 
 function startFreshSession() {
@@ -357,7 +358,6 @@ function updateLiveStats(message) {
 
 function updateMessageDom(index) {
   const feed = document.getElementById('chatFeed')
-  const shouldStick = isNearBottom(feed)
   const message = state.chatMessages[index]
   const article = document.querySelector(`[data-message-index="${index}"]`)
   const bubble = article?.querySelector('.bubble')
@@ -366,9 +366,9 @@ function updateMessageDom(index) {
   updateLiveStats(message)
   bubble.innerHTML = renderMessageContent(message, index)
   if (meta) meta.outerHTML = renderMessageMeta(message)
-  if (message.streaming) {
+  if (message.streaming && state.stickToBottom && !state.isDraggingScrollbar) {
     stickStreamingMessage(article, feed)
-  } else if (shouldStick && feed) {
+  } else if (state.stickToBottom && !state.isDraggingScrollbar && feed) {
     feed.scrollTop = feed.scrollHeight
   }
 }

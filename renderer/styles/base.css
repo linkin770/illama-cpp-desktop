@@ -14,8 +14,10 @@ body {
   overflow: hidden;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+  font-family: var(--font-family);
   letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -24,10 +26,23 @@ textarea,
 select {
   font: inherit;
   letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 button {
   cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+button:focus {
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
 }
 
 .drag-region {
@@ -35,14 +50,14 @@ button {
   top: 0;
   left: 0;
   right: 122px;
-  height: 40px;
+  height: 36px;
   z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
-  color: #5d635b;
-  font-size: 13px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
   user-select: none;
   -webkit-app-region: drag;
 }
@@ -61,4 +76,27 @@ button {
 .danger-btn,
 .text-btn {
   -webkit-app-region: no-drag;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+::selection {
+  background: rgba(22, 163, 74, 0.2);
+  color: var(--ink);
 }
