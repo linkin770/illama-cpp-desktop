@@ -32,13 +32,13 @@ jobs:
       - name: Generate checksum
         shell: pwsh
         run: |
-          $hash = Get-FileHash -LiteralPath "dist/Llama.cpp-Desktop.exe" -Algorithm SHA256
-          "$($hash.Hash)  Llama.cpp-Desktop.exe" | Set-Content -LiteralPath "dist/Llama.cpp-Desktop.exe.sha256" -Encoding ascii
+          $hash = Get-FileHash -LiteralPath "dist/illama-v${{ github.ref_name }}p.zip" -Algorithm SHA256
+          "$($hash.Hash)  illama-v${{ github.ref_name }}p.zip" | Set-Content -LiteralPath "dist/illama-v${{ github.ref_name }}p.zip.sha256" -Encoding ascii
 
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
         with:
           name: Llama.cpp 桌面 ${{ github.ref_name }}
           files: |
-            dist/Llama.cpp-Desktop.exe
-            dist/Llama.cpp-Desktop.exe.sha256
+            dist/illama-v${{ github.ref_name }}p.zip
+            dist/illama-v${{ github.ref_name }}p.zip.sha256

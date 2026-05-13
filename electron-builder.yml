@@ -10,7 +10,7 @@ files:
 win:
   icon: assets/llama-cpp.ico
   target:
-    - portable
-  artifactName: Llama.cpp-Desktop.${ext}
+    - zip
+  artifactName: illama-v${version}p.${ext}
 asar: true
 compression: normal
