@@ -148,6 +148,34 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   bottom: 14px;
 }
 
+.lang-switch {
+  display: flex;
+  gap: 8px;
+}
+
+.lang-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.lang-btn.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
 @media (max-width: 1460px) {
   .service-bar {
     align-items: flex-start;

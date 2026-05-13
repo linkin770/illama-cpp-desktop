@@ -1005,6 +1005,8 @@ function createMainWindow() {
     show: false,
   })
 
+  mainWindow.loadFile(rendererPath)
+  
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
   })
@@ -1025,8 +1027,6 @@ function createMainWindow() {
       })
     }
   })
-
-  mainWindow.loadFile(rendererPath)
   Menu.setApplicationMenu(null)
 }
 
@@ -1557,6 +1557,23 @@ function registerIpc() {
       await shell.openExternal(payload.url)
     }
     return { ok: true }
+  })
+
+  ipcMain.handle('llama:save-file', async (_event, payload) => {
+    const { content, defaultPath, filters } = payload
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath,
+      filters: filters || [{ name: 'JSON Files', extensions: ['json'] }, { name: 'All Files', extensions: ['*'] }],
+    })
+    if (result.canceled) {
+      return { ok: false, canceled: true }
+    }
+    try {
+      await writeFile(result.filePath, content, 'utf8')
+      return { ok: true, filePath: result.filePath }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    }
   })
 }
 

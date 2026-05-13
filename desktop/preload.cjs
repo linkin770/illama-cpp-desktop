@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   pickAttachments: payload => ipcRenderer.invoke('llama:pick-attachments', payload),
   revealPath: filePath => ipcRenderer.invoke('llama:reveal-path', { filePath }),
   openUrl: url => ipcRenderer.invoke('llama:open-url', { url }),
+  saveFile: payload => ipcRenderer.invoke('llama:save-file', payload),
   onEvent: callback => {
     const handler = (_event, payload) => callback(payload)
     ipcRenderer.on('llama:event', handler)

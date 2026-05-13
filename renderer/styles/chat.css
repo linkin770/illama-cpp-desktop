@@ -82,3 +82,139 @@
   border-color: #efc8c1;
   color: var(--danger);
 }
+
+.code-block {
+  margin: 16px -4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.code-block figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f6f6f6;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+}
+
+.code-block figcaption span {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.code-block figcaption .actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-block figcaption button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #666666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.code-block figcaption button:hover {
+  background: #e8e8e8;
+  color: #333333;
+}
+
+.code-block figcaption button:active {
+  background: #d0d0d0;
+}
+
+.code-block figcaption .eye-btn {
+  font-size: 15px;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+.code-block code {
+  display: block;
+}
+
+.code-block pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.code-block pre::-webkit-scrollbar-track {
+  background: #f6f6f6;
+}
+
+.code-block pre::-webkit-scrollbar-thumb {
+  background: #cccccc;
+  border-radius: 4px;
+}
+
+.code-block pre::-webkit-scrollbar-thumb:hover {
+  background: #bbbbbb;
+}
+
+.code-block .keyword {
+  color: #0000ff;
+}
+
+.code-block .string {
+  color: #008000;
+}
+
+.code-block .number {
+  color: #ff0000;
+}
+
+.code-block .comment {
+  color: #008000;
+  font-style: italic;
+}
+
+.code-block .function {
+  color: #795e26;
+}
+
+.code-block .class {
+  color: #267f99;
+}
+
+.code-block .variable {
+  color: #000000;
+}
+
+.code-block .operator {
+  color: #808080;
+}
+
+.code-block .punctuation {
+  color: #666666;
+}
+
+.markdown-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.7;
+  color: var(--ink);
+}
