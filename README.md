@@ -119,12 +119,30 @@ npm start
 ### 项目结构
 
 ```text
+├── assets/           # 图标和资源文件
+│   ├── llama-cpp.png        # 应用图标
+│   ├── llama-cpp.ico        # Windows 图标
+│   └── llama-cpp-tray.png   # 托盘图标
 ├── desktop/          # Electron 主进程
 │   ├── main.mjs      # 主进程逻辑（IPC、进程管理、配置处理）
 │   └── preload.cjs   # 预加载脚本（安全的渲染进程桥接）
 ├── renderer/         # 渲染进程（前端界面）
 │   ├── app.js        # 前端主逻辑（聊天、设置、UI 渲染）
 │   ├── index.html    # HTML 入口
+│   ├── test.html     # 测试页面
+│   ├── js/           # JavaScript 模块
+│   │   ├── chat.js          # 聊天界面逻辑
+│   │   ├── components.js    # UI 组件
+│   │   ├── constants.js     # 常量定义
+│   │   ├── events.js        # 事件处理
+│   │   ├── icons.js         # 图标定义
+│   │   ├── messages.js      # 消息处理
+│   │   ├── nav.js           # 导航栏功能
+│   │   ├── render.js        # 渲染逻辑
+│   │   ├── settings.js      # 设置页面
+│   │   ├── state.js         # 状态管理
+│   │   ├── ui.js            # UI 工具函数
+│   │   └── utils.js         # 通用工具函数
 │   └── styles/       # CSS 样式文件（按模块拆分）
 │       ├── variables.css      # CSS 变量定义
 │       ├── base.css           # 基础样式
@@ -140,13 +158,19 @@ npm start
 │       ├── settings.css       # 设置
 │       ├── settings-extra.css # 设置额外
 │       ├── extra.css          # 额外样式
-│       └── dark-mode.css      # 暗色模式
-├── llama/            # llama.cpp 编译产物
+│       ├── dark-mode.css      # 暗色模式
+│       └── nav.css            # 导航栏样式
+├── llama/            # llama.cpp 编译产物（需自行下载）
 │   ├── llama-server.exe    # 主服务程序
+│   ├── llama.dll           # 核心推理库
 │   ├── ggml*.dll           # ggml 推理库
-│   └── cuda*.dll           # CUDA 支持库（可选）
-├── assets/           # 图标和资源文件
-└── scripts/          # 辅助脚本
+│   └── cuda*.dll           # CUDA 支持库（GPU版本）
+├── scripts/          # 辅助脚本
+│   └── create-icon.ps1      # 图标生成脚本
+├── LICENSE           # 许可证
+├── package.json      # 项目配置
+├── package-lock.json # 依赖锁定
+└── README.md         # 项目说明
 ```
 
 ### 核心技术栈
