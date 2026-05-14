@@ -12,6 +12,13 @@ import {
   saveCurrentSession,
 } from './messages.js'
 
+/**
+ * 渲染附件芯片列表
+ * @param {Array<Object>} attachments - 附件数组
+ * @param {boolean} removable - 是否可移除
+ * @param {string} mode - 渲染模式（composer/message-user/assistant）
+ * @returns {string} HTML 字符串
+ */
 function renderAttachmentChips(attachments, removable, mode) {
   if (!attachments || !attachments.length) return ''
   return attachments
@@ -19,6 +26,10 @@ function renderAttachmentChips(attachments, removable, mode) {
     .join('')
 }
 
+/**
+ * 渲染聊天界面
+ * @returns {string} HTML 字符串
+ */
 function renderChat() {
   const messages = state.chatMessages.length
     ? state.chatMessages
@@ -81,6 +92,10 @@ function renderChat() {
   `
 }
 
+/**
+ * 应用流式消息增量更新
+ * @param {{requestId: string, delta?: string, done?: boolean, content?: string}} payload - 流式更新负载
+ */
 function applyStreamDelta(payload) {
   if (!payload || payload.requestId !== state.streamRequestId) return
   const last = state.chatMessages[state.chatMessages.length - 1]

@@ -31,6 +31,10 @@ const domCache = {
   toast: null,
 }
 
+/**
+ * 渲染侧边栏日志列表
+ * @returns {string} 日志列表的 HTML 字符串
+ */
 function renderSidebarLogs() {
   const logs = state.logs?.slice(-80) || []
   if (!logs.length) {
@@ -49,6 +53,10 @@ function renderSidebarLogs() {
     .join('')
 }
 
+/**
+ * 渲染侧边栏组件
+ * @returns {string} 侧边栏的 HTML 字符串
+ */
 function renderSidebar() {
   const query = state.historySearch.trim().toLowerCase()
   const sessions = state.sessions
@@ -115,6 +123,10 @@ function renderSidebar() {
   `
 }
 
+/**
+ * 渲染终端面板组件
+ * @returns {string} 终端面板的 HTML 字符串
+ */
 function renderTerminalPanel() {
   const allLogs = state.logs || []
   const logs = allLogs.slice(-500)
@@ -141,6 +153,13 @@ function renderTerminalPanel() {
   `
 }
 
+/**
+ * 执行全量渲染，替换整个应用的 HTML
+ * @param {Object} [options={}] - 渲染选项
+ * @param {boolean} [options.stickToBottom] - 是否保持滚动到底部
+ * @param {boolean} [options.jumpToBottom] - 是否跳转到底部
+ * @param {boolean} [options.preserveChatScroll] - 是否保持聊天滚动位置
+ */
 function performFullRender(options = {}) {
   const previousFeed = document.getElementById('chatFeed')
   const previousFeedTop = previousFeed?.scrollTop || 0
@@ -204,6 +223,19 @@ function performFullRender(options = {}) {
   refreshChatNav()
 }
 
+/**
+ * 执行增量更新，只更新需要变化的部分
+ * @param {Object} [options={}] - 更新选项
+ * @param {boolean} [options.updateToast] - 更新提示框
+ * @param {boolean} [options.updateServiceBar] - 更新服务栏
+ * @param {boolean} [options.updateSidebar] - 更新侧边栏
+ * @param {boolean} [options.updateChatInput] - 更新聊天输入框
+ * @param {boolean} [options.updateComposerAttachments] - 更新编辑器附件
+ * @param {number} [options.appendMessage] - 追加消息的索引
+ * @param {number} [options.updateMessage] - 更新消息的索引
+ * @param {boolean} [options.jumpToBottom] - 是否跳转到底部
+ * @param {boolean} [options.preserveChatScroll] - 是否保持聊天滚动位置
+ */
 function performIncrementalUpdate(options = {}) {
   if (options.updateToast && domCache.toast) {
     domCache.toast.textContent = escapeHtml(state.toast)
@@ -355,6 +387,14 @@ function performIncrementalUpdate(options = {}) {
   performFullRender(options)
 }
 
+/**
+ * 恢复滚动位置
+ * @param {Object} options - 渲染选项
+ * @param {HTMLElement} previousFeed - 之前的聊天容器
+ * @param {number} previousFeedTop - 之前的滚动位置
+ * @param {number} previousFeedHeight - 之前的容器高度
+ * @param {boolean} shouldStick - 是否应该保持在底部
+ */
 function restoreScrollPosition(options, previousFeed, previousFeedTop, previousFeedHeight, shouldStick) {
   const chatFeed = document.getElementById('chatFeed')
   if (chatFeed) {
@@ -393,6 +433,9 @@ function restoreScrollPosition(options, previousFeed, previousFeedTop, previousF
   }
 }
 
+/**
+ * 应用深色模式
+ */
 function applyDarkMode() {
   if (state.darkMode) {
     document.body.classList.add('dark-mode')
@@ -401,6 +444,11 @@ function applyDarkMode() {
   }
 }
 
+/**
+ * 渲染主入口函数，根据状态决定执行全量渲染还是增量更新
+ * @param {Object} [options={}] - 渲染选项
+ * @param {boolean} [options.fullRender] - 是否强制全量渲染
+ */
 function render(options = {}) {
   if (!state.config) {
     getAppEl().innerHTML = '<div class="boot">正在读取配置...</div>'

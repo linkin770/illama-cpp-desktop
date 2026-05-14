@@ -1,11 +1,19 @@
 import { state } from './state.js'
 import { formatBytes, estimateTokens, splitCodeParts, escapeHtml, escapeAttribute, isNearBottom, renderTextBlock, highlightCode, canPreviewCode, splitThinkingOutput } from './utils.js'
 
+/**
+ * 获取当前模型名称（从配置中提取文件名）
+ * @returns {string} 模型文件名
+ */
 function modelName() {
   const model = state.config?.model || ''
   return model.split(/[\\/]/).pop() || 'local-model'
 }
 
+/**
+ * 获取服务状态标签
+ * @returns {string} 状态标签（未启动/启动中/运行中/停止中/需要处理）
+ */
 function statusLabel() {
   return {
     stopped: '未启动',
@@ -16,6 +24,10 @@ function statusLabel() {
   }[state.status.state] || state.status.state
 }
 
+/**
+ * 获取服务状态对应的 CSS 类名
+ * @returns {string} CSS 类名（running/error/pending/空字符串）
+ */
 function statusClass() {
   if (state.status.state === 'running') return 'running'
   if (state.status.state === 'error') return 'error'
@@ -23,6 +35,11 @@ function statusClass() {
   return ''
 }
 
+/**
+ * 压缩状态消息，处理常见错误场景
+ * @param {string} message - 原始状态消息
+ * @returns {string} 压缩后的消息（最大 180 字符）
+ */
 function compactStatusMessage(message) {
   const text = String(message || '')
   if (text.includes('System message must be at the beginning')) {
@@ -37,6 +54,11 @@ function compactStatusMessage(message) {
   return text
 }
 
+/**
+ * 格式化友好的错误消息
+ * @param {Error|string} error - 错误对象或错误消息
+ * @returns {string} 用户友好的错误提示
+ */
 function friendlyErrorMessage(error) {
   const text = String(error?.message || error || '')
   if (text.includes('System message must be at the beginning')) {
@@ -54,6 +76,11 @@ function friendlyErrorMessage(error) {
   return text.length > 360 ? `发送失败：${text.slice(0, 360)}...` : `发送失败：${text}`
 }
 
+/**
+ * 将时间戳格式化为简短的中文日期时间
+ * @param {string|Date} value - 时间值
+ * @returns {string} 格式化后的时间字符串（如 "05/14 10:30"）
+ */
 function shortTime(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -67,15 +94,27 @@ function shortTime(value) {
   })
 }
 
+/**
+ * 生成唯一的会话 ID
+ * @returns {string} 会话 ID（格式：session-时间戳-随机串）
+ */
 function makeSessionId() {
   return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+/**
+ * 从消息列表生成会话标题（取第一条用户消息）
+ * @param {Array<{role: string, content: string}>} messages - 消息列表
+ * @returns {string} 会话标题（最多 36 字符）
+ */
 function titleFromMessages(messages) {
   const firstUser = messages.find(message => message.role === 'user' && String(message.content || '').trim())
   return String(firstUser?.content || '新聊天').replace(/\s+/g, ' ').slice(0, 36)
 }
 
+/**
+ * 从 localStorage 加载会话列表
+ */
 function loadSessions() {
   try {
     const saved = JSON.parse(localStorage.getItem('llama.cpp.desktop.sessions') || '[]')
@@ -85,10 +124,16 @@ function loadSessions() {
   }
 }
 
+/**
+ * 将会话列表持久化到 localStorage（最多保存 80 条）
+ */
 function persistSessions() {
   localStorage.setItem('llama.cpp.desktop.sessions', JSON.stringify(state.sessions.slice(0, 80)))
 }
 
+/**
+ * 保存当前会话到会话列表
+ */
 function saveCurrentSession() {
   if (!state.currentSessionId || state.chatMessages.length === 0) return
   const now = Date.now()
@@ -108,6 +153,11 @@ function saveCurrentSession() {
   persistSessions()
 }
 
+/**
+ * 构建 API 请求格式的消息列表
+ * @param {Array<{role: string, content: string, attachments?: Array, localOnly?: boolean}>} messages - 原始消息列表
+ * @returns {Array<{role: string, content: string}>} 格式化后的消息列表
+ */
 function buildApiMessages(messages) {
   const systemMessages = []
   const conversation = []
@@ -132,6 +182,10 @@ function buildApiMessages(messages) {
     : conversation
 }
 
+/**
+ * 打开指定会话
+ * @param {string} sessionId - 会话 ID
+ */
 function openSession(sessionId) {
   saveCurrentSession()
   const session = state.sessions.find(item => item.id === sessionId)
@@ -147,6 +201,9 @@ function openSession(sessionId) {
   state.stickToBottom = true
 }
 
+/**
+ * 创建新会话
+ */
 function startFreshSession() {
   saveCurrentSession()
   state.currentSessionId = makeSessionId()
@@ -169,6 +226,11 @@ function startFreshSession() {
   }
 }
 
+/**
+ * 获取附件类型的中文标签
+ * @param {string} kind - 附件类型（image/audio/text/pdf/system/mcp/file）
+ * @returns {string} 中文标签
+ */
 function attachmentLabel(kind) {
   return {
     image: '图片',
@@ -178,10 +240,17 @@ function attachmentLabel(kind) {
     system: '系统',
     mcp: 'MCP',
     file: '文件',
-    video: '视频',
   }[kind] || '文件'
 }
 
+/**
+ * 渲染单个附件项
+ * @param {Object} item - 附件对象
+ * @param {number} index - 附件索引
+ * @param {boolean} removable - 是否可移除
+ * @param {string} mode - 渲染模式（composer/message-user/其他）
+ * @returns {string} HTML 字符串
+ */
 function renderAttachmentItem(item, index, removable, mode = 'composer') {
   const kind = String(item?.kind || 'file')
   const name = String(item?.name || 'attachment')
@@ -224,34 +293,51 @@ function renderAttachmentItem(item, index, removable, mode = 'composer') {
   `
 }
 
+/**
+ * 渲染消息操作按钮（复制/编辑/重试/删除）
+ * @param {number} index - 消息索引
+ * @param {Object} message - 消息对象
+ * @returns {string} HTML 字符串
+ */
 function renderMessageActions(index, message) {
   const canRetry = message.role === 'assistant'
   return `
     <div class="message-actions">
       <button type="button" data-action="copy-message" data-index="${index}" title="复制">⧉</button>
       <button type="button" data-action="edit-message" data-index="${index}" title="编辑">✎</button>
-      ${canRetry ? `<button type="button" data-action="retry-message" data-index="${index}" title="重新生成">↻</button>` : ''}
-      <button type="button" data-action="delete-message" data-index="${index}" title="删除">⌫</button>
+      ${canRetry ? `<button type="button" data-action="retry-message" data-index="${index}" title="重新生成">⟳</button>` : ''}
+      <button type="button" data-action="delete-message" data-index="${index}" title="删除">✖</button>
     </div>
   `
 }
 
+/**
+ * 渲染消息元信息（模型名称、Token数、耗时、速度）
+ * @param {Object} message - 消息对象
+ * @returns {string} HTML 字符串
+ */
 function renderMessageMeta(message) {
   if (message.role !== 'assistant') return ''
   const tokens = message.tokens || message.estimatedTokens || estimateTokens(message.content)
   const latencyMs = message.latencyMs || (message.streaming ? Date.now() - (message.startedAt || message.createdAt || Date.now()) : 0)
   const speed = message.speed || (tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
   const pieces = [
-    `<span class="model-pill">◇ ${escapeHtml(message.model || modelName())}</span>`,
-    `<span>▦ ${escapeHtml(tokens || 0)} Tokens</span>`,
-    latencyMs ? `<span>◷ ${(latencyMs / 1000).toFixed(1)}s</span>` : '<span>◷ 0.0s</span>',
-    speed ? `<span>⌁ ${escapeHtml(speed)}</span>` : '',
+    `<span class="model-pill">☯ ${escapeHtml(message.model || modelName())}</span>`,
+    `<span>⛶ ${escapeHtml(tokens || 0)} Tokens</span>`,
+    latencyMs ? `<span>⏲ ${(latencyMs / 1000).toFixed(1)}s</span>` : '<span>⏱ 0.0s</span>',
+    speed ? `<span>⏻ ${escapeHtml(speed)}</span>` : '',
     message.streaming ? '<span>生成中</span>' : '',
   ].filter(Boolean)
 
   return pieces.length ? `<div class="message-meta">${pieces.join('')}</div>` : ''
 }
 
+/**
+ * 渲染消息内容（支持思考过程、代码高亮等）
+ * @param {Object} message - 消息对象
+ * @param {number} messageIndex - 消息索引
+ * @returns {string} HTML 字符串
+ */
 function renderMessageContent(message, messageIndex) {
   const content = String(message.content || '')
   if (!content && message.role === 'assistant' && state.chatBusy) {
@@ -295,6 +381,13 @@ function renderMessageContent(message, messageIndex) {
   return output.join('') || renderTextBlock(content)
 }
 
+/**
+ * 渲染支持代码高亮的文本（分割代码块并高亮）
+ * @param {string} text - 文本内容
+ * @param {number} messageIndex - 消息索引
+ * @param {{value: number}} counter - 代码块计数器
+ * @returns {string} HTML 字符串
+ */
 function renderCodeAwareText(text, messageIndex, counter) {
   return splitCodeParts(String(text || ''))
     .map(part => {
@@ -320,6 +413,12 @@ function renderCodeAwareText(text, messageIndex, counter) {
     .join('')
 }
 
+/**
+ * 获取指定消息中的指定代码块
+ * @param {number} messageIndex - 消息索引
+ * @param {number} codeIndex - 代码块索引
+ * @returns {{type: 'code', language: string, value: string} | null} 代码块对象或 null
+ */
 function getCodeBlock(messageIndex, codeIndex) {
   const message = state.chatMessages[Number(messageIndex)]
   if (!message) return null
@@ -327,6 +426,10 @@ function getCodeBlock(messageIndex, codeIndex) {
   return blocks[Number(codeIndex)] || null
 }
 
+/**
+ * 滚动打开的原始输出块到底部
+ * @param {Document|HTMLElement} root - 根元素
+ */
 function scrollOpenRawOutputs(root = document) {
   const sync = () => {
     root.querySelectorAll?.('.raw-output-block[open] pre').forEach(pre => {
@@ -337,6 +440,11 @@ function scrollOpenRawOutputs(root = document) {
   window.requestAnimationFrame(sync)
 }
 
+/**
+ * 将消息滚动到底部（用于流式输出）
+ * @param {HTMLElement} article - 消息元素
+ * @param {HTMLElement} feed - 聊天容器
+ */
 function stickStreamingMessage(article, feed) {
   const sync = () => {
     scrollOpenRawOutputs(article)
@@ -346,6 +454,10 @@ function stickStreamingMessage(article, feed) {
   window.requestAnimationFrame(sync)
 }
 
+/**
+ * 更新消息的实时统计信息（Token数、耗时、速度）
+ * @param {Object} message - 消息对象
+ */
 function updateLiveStats(message) {
   if (!message || message.role !== 'assistant') return
   const startedAt = message.startedAt || message.createdAt || Date.now()
@@ -356,6 +468,10 @@ function updateLiveStats(message) {
   message.speed = tokens ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''
 }
 
+/**
+ * 更新消息 DOM（用于流式输出更新）
+ * @param {number} index - 消息索引
+ */
 function updateMessageDom(index) {
   const feed = document.getElementById('chatFeed')
   const message = state.chatMessages[index]
@@ -373,6 +489,12 @@ function updateMessageDom(index) {
   }
 }
 
+/**
+ * 渲染日志行
+ * @param {{at: string, source: string, line: string}} entry - 日志条目
+ * @param {string} className - CSS 类名
+ * @returns {string} HTML 字符串
+ */
 function renderLogRow(entry, className = 'terminal-row') {
   return `
     <div class="${className}">
@@ -383,6 +505,11 @@ function renderLogRow(entry, className = 'terminal-row') {
   `
 }
 
+/**
+ * 压缩日志行用于显示（过滤重复日志、超长日志等）
+ * @param {string} line - 原始日志行
+ * @returns {string} 压缩后的日志行（空字符串表示过滤掉）
+ */
 function compactLogLineForDisplay(line) {
   const text = String(line || '').trim()
   const lower = text.toLowerCase()
@@ -404,6 +531,11 @@ function compactLogLineForDisplay(line) {
   return text
 }
 
+/**
+ * 获取可见的日志列表（过滤重复日志）
+ * @param {number} limit - 最大条数（默认 420）
+ * @returns {Array<{at: string, source: string, line: string}>} 日志数组
+ */
 function visibleLogs(limit = 420) {
   return (state.logs || [])
     .map(entry => ({ ...entry, line: compactLogLineForDisplay(entry.line) }))
@@ -411,6 +543,11 @@ function visibleLogs(limit = 420) {
     .slice(-limit)
 }
 
+/**
+ * 为终端显示处理日志行（过滤聊天相关日志）
+ * @param {{at: string, source: string, line: string}} entry - 日志条目
+ * @returns {string} 处理后的日志行（空字符串表示过滤掉）
+ */
 function terminalLineForDisplay(entry) {
   const line = compactLogLineForDisplay(entry?.line)
   if (!line) return ''
@@ -430,6 +567,11 @@ function terminalLineForDisplay(entry) {
   return ''
 }
 
+/**
+ * 获取终端可见的日志列表
+ * @param {number} limit - 最大条数（默认 520）
+ * @returns {Array<string>} 日志行数组
+ */
 function visibleTerminalLogs(limit = 520) {
   return (state.logs || [])
     .map(entry => terminalLineForDisplay(entry))

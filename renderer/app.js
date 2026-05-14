@@ -97,6 +97,10 @@ import {
 
 
 
+/**
+ * 打开附件菜单，计算菜单位置以确保完全可见
+ * @param {HTMLElement} button - 触发菜单的按钮元素
+ */
 function openAttachmentMenu(button) {
   const rect = button.getBoundingClientRect()
   const menuWidth = 206
@@ -117,10 +121,20 @@ function openAttachmentMenu(button) {
   }
 }
 
+/**
+ * 渲染设置面板的一个章节
+ * @param {string} id - 章节 ID
+ * @param {string} content - 章节内容
+ * @returns {string} 章节的 HTML 字符串
+ */
 function renderSettingsSection(id, content) {
   return `<section class="settings-section ${state.active === id ? 'active' : ''}">${content}</section>`
 }
 
+/**
+ * 渲染设置面板的内容，包含所有配置项
+ * @returns {string} 设置面板内容的 HTML 字符串
+ */
 function renderSettingsContent() {
   const v = state.validation || {}
   const checks = `
@@ -231,6 +245,10 @@ function renderSettingsContent() {
 
 
 
+/**
+ * 设置提示消息，2.8秒后自动消失
+ * @param {string} message - 提示消息内容
+ */
 function setToast(message) {
   state.toast = message
   render({ updateToast: true })
@@ -241,6 +259,15 @@ function setToast(message) {
   }, 2800)
 }
 
+/**
+ * 从后端更新状态
+ * @param {Object} payload - 后端返回的数据
+ * @param {Object} [payload.config] - 配置对象
+ * @param {Object} [payload.validation] - 验证状态
+ * @param {Object} [payload.status] - 服务状态
+ * @param {Array} [payload.logs] - 日志列表
+ * @param {Object} [payload.launch] - 启动信息
+ */
 function patchFromBackend(payload) {
   if (payload.config) state.config = payload.config
   if (payload.validation) state.validation = payload.validation
@@ -250,12 +277,20 @@ function patchFromBackend(payload) {
   state.dirty = false
 }
 
+/**
+ * 获取输入框的数值，如果无效则返回原值
+ * @param {HTMLInputElement} input - 输入框元素
+ * @returns {number|string} 数值或原始字符串值
+ */
 function localNumberValue(input) {
   if (input.value === '') return ''
   const next = Number(input.value)
   return Number.isFinite(next) ? next : input.value
 }
 
+/**
+ * 保存配置到后端
+ */
 async function save() {
   state.busy = true
   render({ preserveChatScroll: true })
@@ -270,6 +305,9 @@ async function save() {
   }
 }
 
+/**
+ * 启动 llama.cpp 服务
+ */
 async function start() {
   state.busy = true
   render({ preserveChatScroll: true })
@@ -285,6 +323,9 @@ async function start() {
   }
 }
 
+/**
+ * 停止 llama.cpp 服务
+ */
 async function stop() {
   state.busy = true
   render({ preserveChatScroll: true })
@@ -299,11 +340,17 @@ async function stop() {
   }
 }
 
+/**
+ * 检查端口健康状态
+ */
 async function health() {
   const result = await window.llamaDesktop.testHealth({ config: state.config })
   setToast(result.ok ? `端口正常：${result.url}` : `端口未响应：${result.message || result.url}`)
 }
 
+/**
+ * 打开模型信息弹窗并获取模型信息
+ */
 async function openModelInfo() {
   state.modelInfoOpen = true
   state.modelInfo = { loading: true }
@@ -318,6 +365,11 @@ async function openModelInfo() {
 
 
 
+/**
+ * 选择文件或目录
+ * @param {string} fieldName - 配置字段名
+ * @param {string} kind - 文件类型（exe/gguf/toml/dir）
+ */
 async function pick(fieldName, kind) {
   const filters = {
     exe: [
@@ -345,6 +397,10 @@ async function pick(fieldName, kind) {
   }
 }
 
+/**
+ * 选择附件文件
+ * @param {string} kind - 附件类型
+ */
 async function pickAttachment(kind) {
   try {
     const picked = await window.llamaDesktop.pickAttachments({ kind })
@@ -375,6 +431,9 @@ async function pickAttachment(kind) {
 
 
 
+/**
+ * 初始化应用程序
+ */
 async function init() {
   try {
     loadSessions()
@@ -420,6 +479,9 @@ async function init() {
   })
 }
 
+/**
+ * 中止当前正在进行的聊天请求
+ */
 async function abortChat() {
   if (!state.chatBusy) return
   try {
@@ -433,6 +495,10 @@ async function abortChat() {
   render({ updateServiceBar: true })
 }
 
+/**
+ * 重试指定索引的消息
+ * @param {number} index - 要重试的消息索引
+ */
 async function retryMessage(index) {
   if (state.chatBusy) return
   const previousUserIndex = state.chatMessages
@@ -504,6 +570,9 @@ async function retryMessage(index) {
   }
 }
 
+/**
+ * 发送聊天消息
+ */
 async function sendChat() {
   const content = state.chatInput.trim()
   if ((!content && state.attachments.length === 0) || state.chatBusy) return

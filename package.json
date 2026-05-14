@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "main": "desktop/main.mjs",
-  "productName": "Llama.cpp Desktop",
+  "productName": "illama Desktop",
   "keywords": [
     "llama.cpp",
     "AI",
@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "fs-extra": "^11.2.0",
-    "mammoth": "^1.12.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^4.4.168",
+    "word-extractor": "^1.0.4",
     "xlsx": "^0.18.5"
   }
 }

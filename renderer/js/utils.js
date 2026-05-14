@@ -1,3 +1,8 @@
+/**
+ * HTML 转义函数，防止 XSS 攻击
+ * @param {string} value - 需要转义的字符串
+ * @returns {string} 转义后的安全字符串
+ */
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -6,19 +11,39 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * HTML 属性转义函数，额外转义单引号
+ * @param {string} value - 需要转义的属性值
+ * @returns {string} 转义后的安全字符串
+ */
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/'/g, '&#39;')
 }
 
+/**
+ * 判断元素是否接近底部
+ * @param {HTMLElement} element - DOM 元素
+ * @returns {boolean} 如果距离底部小于 96px 返回 true
+ */
 function isNearBottom(element) {
   if (!element) return true
   return element.scrollHeight - element.scrollTop - element.clientHeight < 96
 }
 
+/**
+ * 获取文件路径中的文件名
+ * @param {string} filePath - 文件路径
+ * @returns {string} 文件名（不含路径）
+ */
 function basename(filePath) {
   return String(filePath || '').split(/[\\/]/).pop() || ''
 }
 
+/**
+ * 格式化字节数为可读字符串
+ * @param {number} bytes - 字节数
+ * @returns {string} 格式化后的字符串（如 "1.5 MB"）
+ */
 function formatBytes(bytes) {
   const value = Number(bytes || 0)
   if (!Number.isFinite(value) || value <= 0) return '未读取'
@@ -32,6 +57,11 @@ function formatBytes(bytes) {
   return `${next >= 100 || unitIndex === 0 ? next.toFixed(0) : next.toFixed(2)} ${units[unitIndex]}`
 }
 
+/**
+ * 从模型文件名中提取模型家族名称
+ * @param {string} name - 模型文件名
+ * @returns {string} 模型家族名称（去除量化信息和扩展名）
+ */
 function modelFamilyFromName(name) {
   return String(name || '')
     .replace(/\.gguf$/i, '')
@@ -39,16 +69,31 @@ function modelFamilyFromName(name) {
     .replace(/\.(iq\d[^.]*)$/i, '')
 }
 
+/**
+ * 从模型文件名中提取量化级别标签
+ * @param {string} name - 模型文件名
+ * @returns {string} 量化级别（如 Q4_K_M），未标注则返回 "未标注"
+ */
 function quantLabelFromName(name) {
   const match = String(name || '').match(/\.(q\d[^.]*)\.gguf$/i) || String(name || '').match(/\.(iq\d[^.]*)\.gguf$/i)
   return match?.[1]?.toUpperCase() || '未标注'
 }
 
+/**
+ * 从模型文件名中提取参数规模
+ * @param {string} name - 模型文件名
+ * @returns {string} 参数规模（如 7B、13B），未标注则返回 "未标注"
+ */
 function paramScaleFromName(name) {
   const match = String(name || '').match(/(\d+(?:\.\d+)?)B/i)
   return match ? `${match[1]}B` : '未标注'
 }
 
+/**
+ * 将文本内容按代码块分割
+ * @param {string} content - 原始文本内容
+ * @returns {Array<{type: 'text' | 'code', language?: string, value: string}>} 分割后的段落数组
+ */
 function splitCodeParts(content) {
   const parts = []
   const pattern = /```([^\n`]*)\n?([\s\S]*?)```/g
@@ -71,6 +116,11 @@ function splitCodeParts(content) {
   return parts
 }
 
+/**
+ * 渲染 Markdown 文本为 HTML
+ * @param {string} text - Markdown 格式文本
+ * @returns {string} 转换后的 HTML 字符串
+ */
 function renderMarkdown(text) {
   const value = String(text || '')
   if (!value.trim()) return ''
@@ -184,12 +234,23 @@ function renderMarkdown(text) {
   return output
 }
 
+/**
+ * 将文本渲染为带类名的 Markdown 容器
+ * @param {string} text - Markdown 格式文本
+ * @returns {string} HTML 字符串
+ */
 function renderTextBlock(text) {
   const value = String(text || '')
   if (!value.trim()) return ''
   return `<div class="markdown-text">${renderMarkdown(value)}</div>`
 }
 
+/**
+ * 根据语言类型高亮代码
+ * @param {string} code - 代码内容
+ * @param {string} language - 编程语言（如 javascript, python, html, css, json）
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightCode(code, language) {
   const lang = String(language || '').toLowerCase()
   let result = escapeHtml(code)
@@ -209,6 +270,11 @@ function highlightCode(code, language) {
   return result
 }
 
+/**
+ * JavaScript/TypeScript 代码语法高亮
+ * @param {string} code - JS/TS 代码
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightJavaScript(code) {
   const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'async', 'await', 'try', 'catch', 'throw', 'typeof', 'instanceof', 'in', 'of', 'with', 'switch', 'case', 'default', 'break', 'continue', 'do', 'void', 'delete', 'typeof', 'instanceof', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Symbol', 'Promise', 'Map', 'Set', 'Array', 'Object', 'String', 'Number', 'Boolean']
   
@@ -230,6 +296,11 @@ function highlightJavaScript(code) {
   return result
 }
 
+/**
+ * Python 代码语法高亮
+ * @param {string} code - Python 代码
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightPython(code) {
   const keywords = ['def', 'class', 'if', 'elif', 'else', 'for', 'while', 'return', 'import', 'from', 'as', 'try', 'except', 'finally', 'raise', 'with', 'lambda', 'and', 'or', 'not', 'is', 'in', 'True', 'False', 'None', 'self', '__init__', '__str__', '__repr__', '__class__', 'print', 'len', 'range', 'list', 'dict', 'set', 'tuple', 'str', 'int', 'float', 'bool']
   
@@ -249,6 +320,11 @@ function highlightPython(code) {
   return result
 }
 
+/**
+ * HTML/XML 代码语法高亮
+ * @param {string} code - HTML/XML 代码
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightHtml(code) {
   let result = escapeHtml(code)
   
@@ -263,6 +339,11 @@ function highlightHtml(code) {
   return result
 }
 
+/**
+ * CSS 代码语法高亮
+ * @param {string} code - CSS 代码
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightCss(code) {
   let result = escapeHtml(code)
   
@@ -279,6 +360,11 @@ function highlightCss(code) {
   return result
 }
 
+/**
+ * JSON 代码语法高亮
+ * @param {string} code - JSON 代码
+ * @returns {string} 带高亮样式的 HTML 字符串
+ */
 function highlightJson(code) {
   let result = escapeHtml(code)
   
@@ -293,11 +379,22 @@ function highlightJson(code) {
   return result
 }
 
+/**
+ * 判断代码是否可预览（HTML/SVG等）
+ * @param {string} language - 编程语言
+ * @param {string} code - 代码内容
+ * @returns {boolean} 是否可预览
+ */
 function canPreviewCode(language, code) {
   const lang = String(language || '').toLowerCase()
   return ['html', 'htm', 'svg'].includes(lang) || /<!doctype|<html|<body|<style|<script/i.test(code)
 }
 
+/**
+ * 估算文本的 token 数量
+ * @param {string} text - 文本内容
+ * @returns {number} 估算的 token 数
+ */
 function estimateTokens(text) {
   const value = String(text || '').trim()
   if (!value) return 0
@@ -308,6 +405,11 @@ function estimateTokens(text) {
   return Math.max(1, Math.round(cjk * 1.5 + latinTokens * 1.3 + punctuation * 0.5))
 }
 
+/**
+ * 分离思考过程和最终回答
+ * @param {string} content - 包含思考过程标记的文本
+ * @returns {{answer: string, thoughts: string[]}} 分离后的回答和思考过程数组
+ */
 function splitThinkingOutput(content) {
   const text = String(content || '')
   const tagPattern = /<think(?:ing)?>/i
@@ -356,6 +458,11 @@ function splitThinkingOutput(content) {
   return { answer: text, thoughts: [] }
 }
 
+/**
+ * 获取输入框的数值（空字符串返回空，无效数字返回原值）
+ * @param {HTMLInputElement} input - 输入框元素
+ * @returns {number|string} 数值或原始字符串
+ */
 function localNumberValue(input) {
   if (input.value === '') return ''
   const next = Number(input.value)

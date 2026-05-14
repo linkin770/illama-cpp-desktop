@@ -133,10 +133,8 @@ function renderModelInfoModal() {
 function attachmentMenuItems() {
   return `
     <button type="button" data-action="pick-image"><span class="menu-icon image"></span>图片</button>
-    <button type="button" disabled title="暂不支持视频理解"><span class="menu-icon video"></span>视频文件</button>
     <button type="button" data-action="pick-audio"><span class="menu-icon audio"></span>音频文件</button>
     <button type="button" data-action="pick-text"><span class="menu-icon text"></span>文本文件</button>
-    <button type="button" data-action="pick-pdf"><span class="menu-icon pdf"></span>PDF 文件</button>
     <button type="button" data-action="insert-system-message"><span class="menu-icon system"></span>系统消息</button>
   `
 }

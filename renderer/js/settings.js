@@ -5,18 +5,45 @@ import { modelName } from './messages.js'
 import { settingsTabs } from './constants.js'
 import { visibleLogs, renderLogRow } from './messages.js'
 
+/**
+ * 获取当前设置面板的标签页 ID
+ * @returns {string} 当前标签页 ID
+ */
 function currentSettingsTabId() {
   return settingsTabs.some(([id]) => id === state.active) ? state.active : 'overview'
 }
 
+/**
+ * 获取当前设置面板标签页的元数据
+ * @returns {Array} 标签页元数据数组 [id, icon, label, hint]
+ */
 function currentSettingsTabMeta() {
   return settingsTabs.find(([id]) => id === currentSettingsTabId()) || settingsTabs[0]
 }
 
+/**
+ * 生成状态药丸指示器
+ * @param {boolean} ok - 是否成功
+ * @param {string} [labelOk='就绪'] - 成功时的标签
+ * @param {string} [labelBad='缺失'] - 失败时的标签
+ * @returns {string} 药丸指示器的 HTML 字符串
+ */
 function pill(ok, labelOk = '就绪', labelBad = '缺失') {
   return `<span class="pill ${ok ? 'good' : 'bad'}">${ok ? labelOk : labelBad}</span>`
 }
 
+/**
+ * 生成表单输入字段
+ * @param {string} name - 字段名
+ * @param {string} label - 字段标签
+ * @param {Object} [options={}] - 字段选项
+ * @param {string} [options.type='text'] - 输入类型
+ * @param {string} [options.pick] - 文件选择类型
+ * @param {string} [options.hint] - 提示文本
+ * @param {boolean} [options.textarea] - 是否为文本域
+ * @param {number} [options.min] - 最小值（数字类型）
+ * @returns {string} 字段的 HTML 字符串
+ */
 function field(name, label, options = {}) {
   const directMode = (state.config?.launch_mode || 'direct') !== 'launcher'
   if (directMode && ['config_path', 'launcher_path', 'llama_server_path'].includes(name)) {
@@ -45,6 +72,14 @@ function field(name, label, options = {}) {
   `
 }
 
+/**
+ * 生成下拉选择字段
+ * @param {string} name - 字段名
+ * @param {string} label - 字段标签
+ * @param {Array} choices - 选项数组
+ * @param {string} [hint=''] - 提示文本
+ * @returns {string} 下拉选择字段的 HTML 字符串
+ */
 function selectField(name, label, choices, hint = '') {
   const value = state.config?.[name] ?? ''
   const directMode = (state.config?.launch_mode || 'direct') !== 'launcher'
@@ -63,6 +98,13 @@ function selectField(name, label, choices, hint = '') {
   ${extra}`
 }
 
+/**
+ * 生成开关字段
+ * @param {string} name - 字段名
+ * @param {string} label - 字段标签
+ * @param {string} hint - 提示文本
+ * @returns {string} 开关字段的 HTML 字符串
+ */
 function switchField(name, label, hint) {
   return `
     <label class="switch">
@@ -75,6 +117,13 @@ function switchField(name, label, hint) {
   `
 }
 
+/**
+ * 渲染现代设置卡片
+ * @param {string} title - 卡片标题
+ * @param {string} text - 卡片描述文本
+ * @param {string} body - 卡片内容
+ * @returns {string} 卡片的 HTML 字符串
+ */
 function renderModernSettingsCard(title, text, body) {
   return `
     <section class="settings-stack-card">
@@ -87,6 +136,10 @@ function renderModernSettingsCard(title, text, body) {
   `
 }
 
+/**
+ * 渲染现代设置面板的内容
+ * @returns {string} 设置内容的 HTML 字符串
+ */
 function renderModernSettingsContent() {
   const tab = currentSettingsTabId()
   const v = state.validation || {}
@@ -263,6 +316,10 @@ function renderModernSettingsContent() {
   `)
 }
 
+/**
+ * 渲染现代设置面板
+ * @returns {string} 设置面板的 HTML 字符串
+ */
 function renderModernSettingsPanel() {
   const v = state.validation || {}
   const [activeId, activeIcon, activeLabel, activeHint] = currentSettingsTabMeta()

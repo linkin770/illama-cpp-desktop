@@ -10,6 +10,9 @@ let initialized = false
 
 const EDGE_ZONE = 56
 
+/**
+ * 确保导航栏和提示框已挂载到 DOM
+ */
 function ensureNavMounted() {
   if (!document.body.contains(navBar)) {
     document.body.appendChild(navBar)
@@ -19,25 +22,46 @@ function ensureNavMounted() {
   }
 }
 
+/**
+ * 获取所有用户消息元素
+ * @returns {Array<HTMLElement>} 用户消息元素数组
+ */
 function getUserMessages() {
   return [...document.querySelectorAll('.message.user')]
 }
 
+/**
+ * 获取消息文本内容
+ * @param {HTMLElement} el - 消息元素
+ * @returns {string} 消息文本
+ */
 function getMessageText(el) {
   const bubble = el.querySelector('.bubble')
   return (bubble?.textContent || '').trim()
 }
 
+/**
+ * 查找消息气泡元素
+ * @param {HTMLElement} msgEl - 消息元素
+ * @returns {HTMLElement} 气泡元素
+ */
 function findBubble(msgEl) {
   return msgEl.querySelector('.bubble') || msgEl
 }
 
+/**
+ * 清除提示框
+ */
 function clearTooltip() {
   clearTimeout(tooltipTimer)
   tooltipTimer = null
   tooltip.style.display = 'none'
 }
 
+/**
+ * 平滑滚动到指定消息
+ * @param {HTMLElement} el - 目标消息元素
+ */
 function scrollToMessage(el) {
   const feed = document.getElementById('chatFeed')
   if (!feed) {
@@ -55,6 +79,10 @@ function scrollToMessage(el) {
   })
 }
 
+/**
+ * 闪烁消息气泡以突出显示
+ * @param {HTMLElement} msgEl - 消息元素
+ */
 function flashBubble(msgEl) {
   const bubble = findBubble(msgEl)
   bubble.classList.remove('nav-flash')
@@ -63,6 +91,9 @@ function flashBubble(msgEl) {
   setTimeout(() => bubble.classList.remove('nav-flash'), 700)
 }
 
+/**
+ * 刷新导航栏内容
+ */
 function refreshNav() {
   ensureNavMounted()
   const msgs = getUserMessages()
@@ -99,6 +130,9 @@ function refreshNav() {
   setTimeout(updateCurrentMessage, 400)
 }
 
+/**
+ * 更新当前活跃消息的高亮状态
+ */
 function updateCurrentMessage() {
   const msgs = getUserMessages()
   if (!msgs.length) return

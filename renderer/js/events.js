@@ -13,8 +13,16 @@ import {
 import { localNumberValue, escapeHtml } from './utils.js'
 import { renderModernSettingsContent, currentSettingsTabMeta } from './settings.js'
 
+/**
+ * 存储各个设置标签页的滚动位置
+ * @type {Object<string, number>}
+ */
 export const tabScrollPositions = {}
 
+/**
+ * 设置所有事件监听器
+ * 包括点击事件、输入事件、键盘事件、滚动事件等
+ */
 export function setupEventListeners() {
   getAppEl().addEventListener('click', async event => {
     const target = event.target.closest('button, .settings-backdrop, .preview-backdrop, .dialog-backdrop, .attach-menu-backdrop')
@@ -41,6 +49,33 @@ export function setupEventListeners() {
     if (sessionId) {
       openSession(sessionId)
       window.appRender({ jumpToBottom: true })
+      return
+    }
+
+    const pickField = target.dataset.pick
+    if (pickField) {
+      const pickKind = target.dataset.kind
+      const filterMap = {
+        gguf: [{ name: 'GGUF Files', extensions: ['gguf'] }, { name: 'All Files', extensions: ['*'] }],
+        exe: [{ name: 'Executable Files', extensions: ['exe'] }, { name: 'All Files', extensions: ['*'] }],
+        toml: [{ name: 'TOML Files', extensions: ['toml'] }, { name: 'All Files', extensions: ['*'] }],
+      }
+      if (pickKind === 'dir') {
+        const filePath = await window.llamaDesktop.pickFile({ properties: ['openDirectory'] })
+        if (filePath) {
+          state.config[pickField] = filePath
+          state.dirty = true
+          window.appRender()
+        }
+      } else {
+        const filters = filterMap[pickKind] || [{ name: 'All Files', extensions: ['*'] }]
+        const filePath = await window.llamaDesktop.pickFile(filters)
+        if (filePath) {
+          state.config[pickField] = filePath
+          state.dirty = true
+          window.appRender()
+        }
+      }
       return
     }
 
@@ -210,9 +245,9 @@ export function setupEventListeners() {
       } else {
         const rect = target.getBoundingClientRect()
         const menuWidth = 206
-        const menuHeight = 252
-        let left = rect.left - menuWidth / 2 + rect.width / 2
-        let top = rect.top - menuHeight - 8
+        const menuHeight = 170
+        let left = rect.left
+        let top = rect.top - menuHeight - 12
         const viewportWidth = window.innerWidth
         const viewportHeight = window.innerHeight
         if (left < 8) left = 8
@@ -266,7 +301,6 @@ export function setupEventListeners() {
     if (action === 'pick-image') void window.appPickAttachment('image')
     if (action === 'pick-audio') void window.appPickAttachment('audio')
     if (action === 'pick-text') void window.appPickAttachment('text')
-    if (action === 'pick-pdf') void window.appPickAttachment('pdf')
     if (action === 'insert-system-message') {
       if (!state.currentSessionId) state.currentSessionId = makeSessionId()
       state.chatMessages.push({
