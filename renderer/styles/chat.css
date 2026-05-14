@@ -115,11 +115,11 @@
 }
 
 .empty-state p {
-  margin: 0;
+  margin: 0 auto;
   color: var(--muted);
   font-size: 15px;
   line-height: 1.6;
-  max-width: 360px;
+  max-width: 480px;
 }
 
 .message {
@@ -207,11 +207,11 @@
 }
 
 .code-block {
-  margin: 16px -4px;
-  border: 1px solid var(--line);
+  margin: -40px -4px;
+  border: 1px solid var(--code-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: #ffffff;
+  background: var(--code-bg);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -219,9 +219,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: #f8f7f5;
-  border-bottom: 1px solid var(--line);
+  padding: 14px 14px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--code-border);
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
@@ -275,7 +275,8 @@
   font-size: 13px;
   line-height: 1.7;
   white-space: pre;
-  background: #ffffff;
+  background: var(--code-bg);
+  color: var(--code-text);
 }
 
 .code-block code {
@@ -287,7 +288,7 @@
 }
 
 .code-block pre::-webkit-scrollbar-track {
-  background: #f8f7f5;
+  background: var(--code-bg);
 }
 
 .code-block pre::-webkit-scrollbar-thumb {
@@ -300,40 +301,40 @@
 }
 
 .code-block .keyword {
-  color: #0000ff;
+  color: var(--code-keyword);
 }
 
 .code-block .string {
-  color: #008000;
+  color: var(--code-string);
 }
 
 .code-block .number {
-  color: #ff0000;
+  color: var(--code-number);
 }
 
 .code-block .comment {
-  color: #008000;
+  color: var(--code-comment);
   font-style: italic;
 }
 
 .code-block .function {
-  color: #795e26;
+  color: var(--code-function);
 }
 
 .code-block .class {
-  color: #267f99;
+  color: var(--code-class);
 }
 
 .code-block .variable {
-  color: #000000;
+  color: var(--code-text);
 }
 
 .code-block .operator {
-  color: #808080;
+  color: var(--code-operator);
 }
 
 .code-block .punctuation {
-  color: #666666;
+  color: var(--code-text);
 }
 
 .markdown-text {
@@ -406,7 +407,8 @@
 }
 
 .markdown-text code {
-  background: var(--surface-soft);
+  background: var(--code-inline-bg);
+  color: var(--code-inline-text);
   padding: 0.1em 0.35em;
   border-radius: 3px;
   font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, "Roboto Mono", monospace;

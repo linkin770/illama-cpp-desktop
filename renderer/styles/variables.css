@@ -23,4 +23,16 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
   --font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --code-bg: #f6f8fa;
+  --code-border: #d0d7de;
+  --code-text: #24292f;
+  --code-inline-bg: rgba(175, 184, 193, 0.2);
+  --code-inline-text: #d73a49;
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-comment: #6e7781;
+  --code-function: #8250df;
+  --code-number: #0550ae;
+  --code-operator: #cf222e;
+  --code-class: #953800;
 }

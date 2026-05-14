@@ -1,6 +1,6 @@
 {
   "name": "illama-cpp-desktop",
-  "version": "0.0.20260513",
+  "version": "0.0.20260514",
   "description": "A feature-complete Windows desktop control panel for running and chatting with a local llama.cpp server. Supports OpenAI compatible API, built-in chat interface, system tray background running, and dark/light mode switching.",
   "author": "linkin770",
   "license": "MIT",

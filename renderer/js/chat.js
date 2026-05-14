@@ -51,8 +51,8 @@ function renderChat() {
         .join('')
     : `
       <div class="empty-state">
-        <h1>llama.cpp</h1>
-        <p>输入消息，或把本地服务接给 OpenClaw、Claude Code 和任何 OpenAI 兼容客户端。</p>
+        <h1>illama.exe</h1>
+        <p>无需命令行，就能管理本地AI服务。它既是控制台，也是聊天室，更是连接OpenClaw、Claude Code等外部工具的桥梁。</p>
       </div>
     `
 

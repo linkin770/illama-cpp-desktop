@@ -120,6 +120,17 @@ function updateCurrentMessage() {
     navBar.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', parseInt(item.dataset.idx) === currentActiveIdx)
     })
+
+    const activeItem = navBar.querySelector('.nav-item.active')
+    if (activeItem) {
+      const navRect = navBar.getBoundingClientRect()
+      const itemRect = activeItem.getBoundingClientRect()
+      const targetScroll = navBar.scrollTop + itemRect.top - navRect.top - navRect.height / 2 + itemRect.height / 2
+      navBar.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      })
+    }
   }
 }
 
