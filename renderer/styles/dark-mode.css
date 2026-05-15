@@ -762,18 +762,30 @@
 }
 
 .dark-mode .send-btn {
-  background: #46464B;
+  background: #6b8a67;
   color: #f0f0f0;
+  border-radius: 50%;
 }
 
 .dark-mode .send-btn.active {
-  background: var(--green);
-  color: #1E1E1E;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #ffffff;
+  border-radius: 50%;
 }
 
 .dark-mode .send-btn.stop-btn {
-  background: var(--danger);
-  color: #1E1E1E;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  border-radius: 50%;
+}
+
+.dark-mode .send-btn.stop-btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.4), transparent);
+  animation: pulse-ring 1.5s linear infinite;
 }
 
 .dark-mode .primary-btn {

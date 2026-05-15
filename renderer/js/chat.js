@@ -50,7 +50,7 @@ function renderChat() {
 
           return `
             <article class="message ${escapeHtml(message.role)}" data-message-index="${index}">
-              <div class="avatar">${message.role === 'user' ? '你' : message.role === 'assistant' ? 'll' : 'sys'}</div>
+              <div class="avatar">${message.role === 'user' ? '你' : message.role === 'assistant' ? 'AI' : 'sys'}</div>
               <div class="message-body">
                 ${body}
                 ${renderMessageMeta(message)}
