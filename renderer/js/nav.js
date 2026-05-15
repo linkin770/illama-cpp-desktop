@@ -202,8 +202,7 @@ export function initChatNav() {
   })
 
   document.addEventListener('mousemove', (e) => {
-    const dist = window.innerWidth - e.clientX
-    if (dist < EDGE_ZONE || mouseInNav) {
+    if (mouseInNav) {
       navBar.classList.add('expanded')
     } else {
       navBar.classList.remove('expanded')

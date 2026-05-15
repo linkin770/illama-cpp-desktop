@@ -762,21 +762,21 @@
 }
 
 .dark-mode .send-btn {
+  border-radius: 50%;
   background: #6b8a67;
   color: #f0f0f0;
-  border-radius: 50%;
 }
 
 .dark-mode .send-btn.active {
+  border-radius: 50%;
   background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   color: #ffffff;
-  border-radius: 50%;
 }
 
 .dark-mode .send-btn.stop-btn {
+  border-radius: 50%;
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   color: #ffffff;
-  border-radius: 50%;
 }
 
 .dark-mode .send-btn.stop-btn::before {

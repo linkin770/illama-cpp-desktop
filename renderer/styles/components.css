@@ -184,7 +184,6 @@
 .send-btn,
 .icon-btn {
   border: 0;
-  border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
   transition: all 120ms ease;
@@ -197,6 +196,7 @@
 }
 
 .round-btn {
+  border-radius: var(--radius-lg);
   background: var(--surface-soft);
   color: var(--ink);
   font-size: 20px;
@@ -211,11 +211,11 @@
 }
 
 .send-btn {
+  border-radius: 50%;
   background: #86a882;
   color: white;
   font-size: 18px;
   font-weight: 600;
-  border-radius: 50%;
 }
 
 .send-btn:disabled {
@@ -223,6 +223,7 @@
 }
 
 .send-btn.active {
+  border-radius: 50%;
   background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
 }
@@ -232,6 +233,7 @@
 }
 
 .send-btn.stop-btn {
+  border-radius: 50%;
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   color: white;
   font-size: 17px;
