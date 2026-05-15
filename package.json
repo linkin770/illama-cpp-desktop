@@ -21,20 +21,26 @@
     "url": "https://github.com/linkin770/illama-cpp-desktop.git"
   },
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --publish never"
+    "start": "npm run build && electron .",
+    "build": "node scripts/build-renderer.js",
+    "dist": "npm run build && electron-builder --publish never"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.6",
     "electron": "41.1.1",
     "electron-builder": "26.8.1",
+    "esbuild": "^0.28.0",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.6"
   },
   "dependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "fs-extra": "^11.2.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^4.4.168",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "word-extractor": "^1.0.4",
     "xlsx": "^0.18.5"
   }
