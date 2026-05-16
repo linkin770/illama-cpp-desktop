@@ -1,3 +1,4 @@
+// 聊天屏幕组件 - 展示消息列表和输入区域
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import type { ChatMessage, Attachment } from '../types'
 import { ChatMessage as ChatMessageComponent } from './ChatMessage'
@@ -43,10 +44,12 @@ export function ChatScreen({
   const stickToBottomRef = useRef(true)
   const isDraggingScrollbarRef = useRef(false)
 
+  // 检查是否滚动到底部附近
   const isNearBottom = useCallback((el: HTMLDivElement) => {
     return el.scrollHeight - el.scrollTop - el.clientHeight < 96
   }, [])
 
+  // 监听滚动事件
   useEffect(() => {
     const feed = chatFeedRef.current
     if (!feed) return
@@ -54,6 +57,7 @@ export function ChatScreen({
     const handleScroll = () => {
       if (isDraggingScrollbarRef.current) return
       const near = isNearBottom(feed)
+      // 更新是否要保持在底部
       if (stickToBottomRef.current && !near) {
         stickToBottomRef.current = false
       } else if (!stickToBottomRef.current && near) {
@@ -66,6 +70,7 @@ export function ChatScreen({
     return () => feed.removeEventListener('scroll', handleScroll)
   }, [isNearBottom])
 
+  // 处理滚动条拖拽
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement
@@ -73,6 +78,7 @@ export function ChatScreen({
         const feed = chatFeedRef.current
         if (!feed) return
         const rect = feed.getBoundingClientRect()
+        // 检查是否点击在滚动条区域
         if (event.clientX > rect.right - 12) {
           isDraggingScrollbarRef.current = true
           stickToBottomRef.current = false
@@ -118,6 +124,7 @@ export function ChatScreen({
     }
   }, [isNearBottom])
 
+  // 新消息时自动滚动到底部
   useEffect(() => {
     const feed = chatFeedRef.current
     if (!feed || chatMessages.length === 0) return
@@ -126,6 +133,7 @@ export function ChatScreen({
     }
   }, [chatMessages])
 
+  // 手动滚动到底部
   const scrollToBottom = () => {
     if (chatFeedRef.current) {
       chatFeedRef.current.scrollTo({ top: chatFeedRef.current.scrollHeight, behavior: 'smooth' })
@@ -133,6 +141,7 @@ export function ChatScreen({
     }
   }
 
+  // 空状态
   if (chatMessages.length === 0) {
     return (
       <section className="chat-screen empty-chat">
@@ -158,9 +167,11 @@ export function ChatScreen({
     )
   }
 
+  // 正常聊天状态
   return (
     <section className="chat-screen">
       <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
+        {/* 渲染所有消息 */}
         {chatMessages.map((message, index) => (
           <ChatMessageComponent
             key={index}
@@ -174,11 +185,13 @@ export function ChatScreen({
           />
         ))}
       </div>
+      {/* 回到最新按钮 */}
       {showScrollButton && (
         <button className="scroll-to-bottom-btn visible" data-action="scroll-to-bottom" title="回到最新" onClick={scrollToBottom}>
           ↓回到最新
         </button>
       )}
+      {/* 输入框 */}
       <ChatInput
         chatInput={chatInput}
         attachments={attachments}

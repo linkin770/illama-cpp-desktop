@@ -1,3 +1,4 @@
+// 模型信息弹窗 - 显示模型详细信息
 import React from 'react'
 import { escapeHtml } from '../utils'
 
@@ -18,11 +19,14 @@ export function ModelInfoModal({ modelInfoOpen, modelInfo, onClose }: ModelInfoM
           <button type="button" className="close-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
+          {/* 加载中 */}
           {modelInfo?.loading ? (
             <div className="loading">加载中...</div>
           ) : modelInfo?.error ? (
+            /* 错误 */
             <div className="error-message">{escapeHtml(String(modelInfo.error))}</div>
           ) : typeof modelInfo === 'object' && modelInfo !== null ? (
+            /* 成功 - 显示模型信息 */
             <div className="model-info-content">
               {Object.entries(modelInfo).map(([key, value]) => (
                 <div key={key} className="info-row">
@@ -32,6 +36,7 @@ export function ModelInfoModal({ modelInfoOpen, modelInfo, onClose }: ModelInfoM
               ))}
             </div>
           ) : (
+            /* 空状态 */
             <div className="empty-state">暂无模型信息</div>
           )}
         </div>

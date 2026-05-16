@@ -1,3 +1,4 @@
+// 设置面板组件 - 配置 llama 服务
 import React from 'react'
 import type { Config, Validation, LogEntry } from '../types'
 import { escapeHtml, visibleLogs, statusLabel, statusClass } from '../utils'
@@ -18,6 +19,7 @@ interface SettingsPanelProps {
   onCopyLaunchCommand: () => void
 }
 
+// 设置标签页定义
 const settingsTabs = [
   { id: 'overview', icon: '⚙', label: '概览', hint: '服务入口与基础运行信息' },
   { id: 'display', icon: '🖥', label: '展示', hint: '模型标签、模板与显示项' },
@@ -46,14 +48,17 @@ export function SettingsPanel({
 
   const currentTab = settingsTabs.find(t => t.id === active) || settingsTabs[0]
 
+  // 状态胶囊组件
   const pill = (value: boolean | undefined) => (
     <span className={`pill ${value ? 'good' : 'bad'}`}>
       {value ? '就绪' : '缺失'}
     </span>
   )
 
+  // 通用输入字段组件
   const field = (key: keyof Config, label: string, options: { pick?: string; hint?: string; textarea?: boolean; type?: string; min?: number } = {}) => {
     const directMode = (config?.launch_mode || 'direct') !== 'launcher'
+    // 直接模式下隐藏某些字段
     if (directMode && ['config_path', 'launcher_path', 'llama_server_path'].includes(String(key))) {
       return null
     }
@@ -101,6 +106,7 @@ export function SettingsPanel({
     )
   }
 
+  // 选择字段组件
   const selectField = (key: keyof Config, label: string, choices: string[], hint?: string) => {
     const value = String(config?.[key] ?? '')
     const directMode = (config?.launch_mode || 'direct') !== 'launcher'
@@ -124,6 +130,7 @@ export function SettingsPanel({
     )
   }
 
+  // 开关字段组件
   const switchField = (key: keyof Config, label: string, hint: string) => {
     const value = config?.[key] === true
 
@@ -142,6 +149,7 @@ export function SettingsPanel({
     )
   }
 
+  // 设置卡片组件
   const settingsCard = (title: string, text: string, content: React.ReactNode) => (
     <section className="settings-stack-card">
       <header>
@@ -152,6 +160,7 @@ export function SettingsPanel({
     </section>
   )
 
+  // 检查项组件
   const checks = (
     <div className="checks">
       <div><span>配置文件</span>{pill(validation.configExists)}</div>
@@ -165,6 +174,7 @@ export function SettingsPanel({
   const launchPreview = String((launch as Record<string, string>).preview || '')
   const launchError = String((launch as Record<string, string>).error || '')
 
+  // 根据当前标签渲染内容
   const renderTabContent = () => {
     switch (currentTab.id) {
       case 'overview':

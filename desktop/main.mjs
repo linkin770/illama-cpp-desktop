@@ -1,3 +1,8 @@
+/**
+ * illama Desktop - Electron 主进程入口文件
+ * 负责窗口管理、llama.cpp 服务启动/停止、IPC 通信、系统托盘管理等核心功能
+ */
+
 import { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -5,34 +10,41 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// ============ 路径配置 ============
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const rootDir = path.resolve(__dirname, '..')
-const preloadPath = path.join(__dirname, 'preload.cjs')
-const rendererPath = path.join(rootDir, 'renderer', 'index.html')
-const iconPath = path.join(rootDir, 'assets', 'llama-cpp.ico')
-const trayIconPath = path.join(rootDir, 'assets', 'llama-cpp-tray.png')
-const llamaDir = path.join(rootDir, 'llama')
-const authoredServerPath = path.join(llamaDir, 'llama-server.exe')
-const authoredServerDir = llamaDir
-const authoredBaseDir = llamaDir
+const rootDir = path.resolve(__dirname, '..')           // 项目根目录
+const preloadPath = path.join(__dirname, 'preload.cjs') // Preload 脚本路径
+const rendererPath = path.join(rootDir, 'renderer', 'index.html') // 渲染进程 HTML
+const iconPath = path.join(rootDir, 'assets', 'llama-cpp.ico')   // 应用图标
+const trayIconPath = path.join(rootDir, 'assets', 'llama-cpp-tray.png') // 托盘图标
+const llamaDir = path.join(rootDir, 'llama')           // llama.cpp 目录
+const authoredServerPath = path.join(llamaDir, 'llama-server.exe') // 默认服务器路径
+const authoredServerDir = llamaDir                     // 默认服务器目录
+const authoredBaseDir = llamaDir                       // 默认基础目录
 
-let mainWindow = null
-let tray = null
-let appIsQuitting = false
-let firstHideNoticeShown = false
-let serverChild = null
-let stoppingServer = false
-let runtimeStatus = {
-  state: 'stopped',
+// ============ 全局状态变量 ============
+let mainWindow = null              // 主窗口实例
+let tray = null                    // 系统托盘实例
+let appIsQuitting = false          // 应用是否正在退出
+let firstHideNoticeShown = false   // 是否显示过第一次隐藏通知
+let serverChild = null             // 服务器进程实例
+let stoppingServer = false         // 是否正在停止服务器
+let runtimeStatus = {              // 运行时状态
+  state: 'stopped',                // stopped | starting | running | stopping | error
   message: '服务未启动',
   pid: null,
   url: 'http://127.0.0.1:8080',
   startedAt: null,
 }
-let logs = []
-let chatAbortController = null
+let logs = []                      // 日志列表
+let chatAbortController = null     // 聊天流中断控制器
 
+// ============ 路径辅助函数 ============
+
+/**
+ * 获取默认基础目录 - 优先查找包含 config.toml 的目录
+ */
 function defaultBaseDir() {
   const candidates = [
     authoredBaseDir,
@@ -43,81 +55,113 @@ function defaultBaseDir() {
   return candidates.find(candidate => existsSync(path.join(candidate, 'config.toml'))) || authoredBaseDir
 }
 
+/**
+ * 获取默认配置文件路径
+ */
 function defaultConfigPath() {
   return path.join(defaultBaseDir(), 'config.toml')
 }
 
+/**
+ * 获取默认启动器路径
+ */
 function defaultLauncherPath() {
   return path.join(defaultBaseDir(), 'llama-server-launcher.exe')
 }
 
+/**
+ * 获取桌面状态文件路径（存储在用户数据目录）
+ */
 function defaultStatePath() {
   return path.join(app.getPath('userData'), 'desktop-state.json')
 }
 
+// ============ 默认配置 ============
+
+/**
+ * 获取默认配置对象
+ * 包含所有 llama.cpp 启动参数的默认值
+ */
 function defaultConfig() {
   return {
-    launch_mode: 'direct',
+    launch_mode: 'direct',              // 启动模式: direct 或 launcher
     launcher_path: defaultLauncherPath(),
     config_path: defaultConfigPath(),
     llama_bin_dir: authoredServerDir,
     llama_server_path: authoredServerPath,
-    model: '',
-    mmproj: '',
-    host: '0.0.0.0',
-    port: 8080,
-    ctx_size: 32768,
-    n_predict: -1,
-    n_gpu_layers: 99,
-    chat_template_kwargs: '{"enable_thinking": false}',
-    request_timeout_ms: 600000,
-    temp: 0.8,
-    top_k: 20,
-    top_p: 0.95,
-    min_p: 0,
-    presence_penalty: 1.5,
-    repeat_penalty: '',
-    frequency_penalty: '',
-    repeat_last_n: '',
-    tfs_z: '',
-    typical_p: '',
-    dry_multiplier: '',
-    dry_base: '',
-    dry_allowed_length: '',
-    dry_penalty_last_n: '',
-    threads: '',
-    threads_batch: '',
-    batch_size: '',
-    ubatch_size: '',
-    cpu_moe: false,
-    n_cpu_moe: '',
-    device: '',
-    split_mode: 'layer',
-    tensor_split: '',
-    main_gpu: '',
-    extra_args: '',
-    show_thinking: true,
-    expand_thinking: false,
-    show_raw_output: false,
-    verbose: true,
-    log_verbosity: 3,
-    webui: true,
-    embeddings: false,
-    continuous_batching: true,
+    model: '',                          // 模型文件路径
+    mmproj: '',                         // 多模态投影文件路径
+    host: '0.0.0.0',                   // 绑定地址
+    port: 8080,                         // 服务端口
+    ctx_size: 32768,                    // 上下文窗口大小
+    n_predict: -1,                      // 最大输出 token 数 (-1 表示无限)
+    n_gpu_layers: 99,                   // GPU 分层数量
+    chat_template_kwargs: '{"enable_thinking": false}', // 对话模板参数
+    request_timeout_ms: 600000,         // 请求超时时间（毫秒）
+    temp: 0.8,                          // 温度参数
+    top_k: 20,                          // Top-K 采样
+    top_p: 0.95,                        // Top-P 采样
+    min_p: 0,                           // Min-P 采样
+    presence_penalty: 1.5,              // 存在惩罚
+    repeat_penalty: '',                 // 重复惩罚
+    frequency_penalty: '',              // 频率惩罚
+    repeat_last_n: '',                  // 重复惩罚窗口大小
+    tfs_z: '',                          // Tail Free Sampling
+    typical_p: '',                      // Typical Sampling
+    dry_multiplier: '',                 // DRY 采样乘数
+    dry_base: '',                       // DRY 采样基数
+    dry_allowed_length: '',             // DRY 允许重复长度
+    dry_penalty_last_n: '',             // DRY 惩罚窗口大小
+    threads: '',                        // 线程数
+    threads_batch: '',                  // 批处理线程数
+    batch_size: '',                     // 批处理大小
+    ubatch_size: '',                    // 微批处理大小
+    cpu_moe: false,                     // MoE 层放在 CPU
+    n_cpu_moe: '',                      // CPU MoE 线程数
+    device: '',                         // 设备类型
+    split_mode: 'layer',                // 多GPU分割模式
+    tensor_split: '',                   // 张量分割比例
+    main_gpu: '',                       // 主 GPU 索引
+    extra_args: '',                     // 额外命令行参数
+    show_thinking: true,                // 显示思考过程
+    expand_thinking: false,             // 默认展开思考
+    show_raw_output: false,             // 显示原始输出
+    verbose: true,                      // 详细日志
+    log_verbosity: 3,                   // 日志详细程度
+    webui: true,                        // 启用 WebUI
+    embeddings: false,                  // 启用 Embeddings
+    continuous_batching: true,          // 启用连续批处理
   }
 }
 
+// ============ 模型文件名解析 ============
+
+/**
+ * 从模型文件名解析量化级别
+ * @param fileName - 模型文件名
+ * @returns 量化级别（如 Q4_K_M）或 '未标注'
+ */
 function parseQuantization(fileName) {
   const text = String(fileName || '')
   const match = text.match(/\.(q\d[^.]*)\.gguf$/i) || text.match(/\.(iq\d[^.]*)\.gguf$/i)
   return match?.[1]?.toUpperCase() || '未标注'
 }
 
+/**
+ * 从模型文件名解析参数量级
+ * @param fileName - 模型文件名
+ * @returns 参数量级（如 7B）或 '未标注'
+ */
 function parseParameterScale(fileName) {
   const match = String(fileName || '').match(/(\d+(?:\.\d+)?)B/i)
   return match ? `${match[1]}B` : '未标注'
 }
 
+/**
+ * 从模型文件名提取模型家族名称
+ * @param fileName - 模型文件名
+ * @returns 模型家族名称
+ */
 function parseFamily(fileName) {
   return String(fileName || '')
     .replace(/\.gguf$/i, '')
@@ -125,6 +169,13 @@ function parseFamily(fileName) {
     .replace(/\.(iq\d[^.]*)$/i, '')
 }
 
+// ============ 网络请求辅助函数 ============
+
+/**
+ * 安全地获取 JSON 数据
+ * @param url - 请求 URL
+ * @returns JSON 对象或 null（请求失败时）
+ */
 async function fetchJson(url) {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(2800) })
@@ -135,6 +186,11 @@ async function fetchJson(url) {
   }
 }
 
+/**
+ * 将数字转换为人类可读格式
+ * @param value - 数字值
+ * @returns 格式化后的字符串（如 1.5B, 2.3M）
+ */
 function humanParams(value) {
   const number = Number(value || 0)
   if (!Number.isFinite(number) || number <= 0) return ''
@@ -143,6 +199,12 @@ function humanParams(value) {
   return String(number)
 }
 
+// ============ 事件发送与状态管理 ============
+
+/**
+ * 向渲染进程发送事件
+ * @param payload - 事件负载
+ */
 function sendEvent(payload) {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return
@@ -150,22 +212,41 @@ function sendEvent(payload) {
   mainWindow.webContents.send('llama:event', payload)
 }
 
+/**
+ * 更新运行时状态并通知渲染进程
+ * @param next - 状态更新对象
+ */
 function setStatus(next) {
   runtimeStatus = { ...runtimeStatus, ...next }
   sendEvent({ type: 'status', status: runtimeStatus })
   updateTrayMenu()
 }
 
+// ============ 日志处理 ============
+
+/**
+ * 移除 ANSI 转义序列
+ * @param value - 原始文本
+ * @returns 清理后的文本
+ */
 function stripAnsi(value) {
   return String(value || '')
     .replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '')
     .replace(/\[[0-9;]*m/g, '')
 }
 
+/**
+ * 压缩日志行 - 过滤重复的例行日志
+ * @param source - 日志来源（stdout/stderr/desktop）
+ * @param line - 日志行
+ * @returns 压缩后的日志行或 null（如果应该过滤）
+ */
 function compactLogLine(source, line) {
   const text = String(line || '').trim()
   const lower = text.toLowerCase()
   const isError = lower.includes('error') || lower.includes('fail') || lower.includes('exception')
+  
+  // 过滤例行的重复日志
   const routinePatterns = [
     'que start_loop: waiting for new tasks',
     'que start_loop: processing new tasks',
@@ -178,6 +259,7 @@ function compactLogLine(source, line) {
     return null
   }
 
+  // 过滤流式输出的中间数据
   if (lower.includes('http: streamed chunk: data:')) {
     if (lower.includes('[done]')) {
       return 'stream chunk: [DONE]'
@@ -185,6 +267,7 @@ function compactLogLine(source, line) {
     return null
   }
 
+  // 过滤重复的消息内容（提示、响应等）
   if (!isError && (
     lower.startsWith('parsed message:') ||
     lower.startsWith('parsed chat message:') ||
@@ -198,6 +281,7 @@ function compactLogLine(source, line) {
     return null
   }
 
+  // 截断过长的日志行
   if (text.length > 420) {
     return `${text.slice(0, 260)} ... [truncated ${text.length - 260} chars]`
   }
@@ -205,6 +289,11 @@ function compactLogLine(source, line) {
   return text
 }
 
+/**
+ * 添加日志条目
+ * @param source - 日志来源
+ * @param chunk - 日志内容（Buffer 或字符串）
+ */
 function addLog(source, chunk) {
   const text = stripAnsi(Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk))
   const entries = text
@@ -219,7 +308,10 @@ function addLog(source, chunk) {
     return
   }
 
+  // 保留最近 1200 条日志
   logs = [...logs, ...entries].slice(-1200)
+  
+  // 检测服务启动状态
   for (const entry of entries) {
     if (entry.line.includes('server is listening')) {
       setStatus({ state: 'running', message: '服务正在监听', pid: serverChild?.pid || null })
@@ -228,9 +320,17 @@ function addLog(source, chunk) {
       setStatus({ message: entry.line })
     }
   }
+  
   sendEvent({ type: 'logs', logs })
 }
 
+// ============ TOML 解析与生成 ============
+
+/**
+ * 移除 TOML 行中的注释（保留字符串内的 #）
+ * @param line - TOML 行
+ * @returns 移除注释后的行
+ */
 function stripTomlComment(line) {
   let inString = false
   let escaped = false
@@ -255,6 +355,11 @@ function stripTomlComment(line) {
   return line
 }
 
+/**
+ * 解析 TOML 值
+ * @param value - 原始值字符串
+ * @returns 解析后的值（字符串、数字、布尔值）
+ */
 function parseTomlValue(value) {
   const text = value.trim()
   if (!text) {
@@ -282,6 +387,11 @@ function parseTomlValue(value) {
   return text
 }
 
+/**
+ * 解析 TOML 字符串
+ * @param raw - TOML 原始文本
+ * @returns 解析后的对象
+ */
 function parseToml(raw) {
   const result = {}
   for (const originalLine of raw.split(/\r?\n/)) {
@@ -300,6 +410,12 @@ function parseToml(raw) {
   return result
 }
 
+/**
+ * 将值转换为数字（带默认值）
+ * @param value - 输入值
+ * @param fallback - 默认值
+ * @returns 转换后的数字或默认值
+ */
 function toNumber(value, fallback = '') {
   if (value === '' || value === null || value === undefined) {
     return fallback
@@ -308,10 +424,19 @@ function toNumber(value, fallback = '') {
   return Number.isFinite(next) ? next : fallback
 }
 
+/**
+ * 将值转换为数字（空值返回空字符串）
+ */
 function toNumberEmpty(value) {
   return toNumber(value, '')
 }
 
+/**
+ * 规范化配置对象
+ * @param values - 输入配置值
+ * @param state - 额外状态
+ * @returns 规范化后的配置
+ */
 function normalizeConfig(values, state = {}) {
   const base = defaultConfig()
   const merged = { ...base, ...state, ...values }
@@ -319,6 +444,7 @@ function normalizeConfig(values, state = {}) {
   const llamaBinDir = hasValue(merged.llama_bin_dir)
     ? String(merged.llama_bin_dir)
     : path.dirname(String(merged.llama_server_path || base.llama_server_path))
+  
   return {
     ...merged,
     launch_mode: launchMode,
@@ -356,10 +482,21 @@ function normalizeConfig(values, state = {}) {
   }
 }
 
+/**
+ * 将值转换为 TOML 字符串格式
+ * @param value - 输入值
+ * @returns TOML 格式的字符串
+ */
 function tomlString(value) {
   return `"${String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }
 
+/**
+ * 生成可选数字行（空值返回 null）
+ * @param key - 参数名
+ * @param value - 值
+ * @returns TOML 行或 null
+ */
 function optionalNumberLine(key, value) {
   if (value === '' || value === null || value === undefined) {
     return null
@@ -367,6 +504,11 @@ function optionalNumberLine(key, value) {
   return `${key} = ${value}`
 }
 
+/**
+ * 根据配置对象构建 TOML 字符串
+ * @param config - 配置对象
+ * @returns TOML 格式的配置文本
+ */
 function buildToml(config) {
   const lines = [
     '# config.toml',
@@ -416,6 +558,7 @@ function buildToml(config) {
     lines.push(repeatPenalty)
   }
 
+  // 添加可选的采样参数
   for (const [key, value] of [
     ['frequency_penalty', config.frequency_penalty],
     ['repeat_last_n', config.repeat_last_n],
@@ -487,6 +630,14 @@ function buildToml(config) {
   return lines.join('\n')
 }
 
+// ============ 文件读写 ============
+
+/**
+ * 读取 JSON 文件（带错误处理）
+ * @param filePath - 文件路径
+ * @param fallback - 失败时的默认值
+ * @returns JSON 对象或默认值
+ */
 async function readJson(filePath, fallback) {
   try {
     return JSON.parse(await readFile(filePath, 'utf8'))
@@ -495,6 +646,10 @@ async function readJson(filePath, fallback) {
   }
 }
 
+/**
+ * 写入桌面状态文件
+ * @param config - 配置对象
+ */
 async function writeDesktopState(config) {
   await mkdir(app.getPath('userData'), { recursive: true })
   await writeFile(
@@ -513,13 +668,17 @@ async function writeDesktopState(config) {
   )
 }
 
+/**
+ * 加载配置（从桌面状态和 TOML 文件）
+ * @returns 规范化后的配置对象
+ */
 async function loadConfig() {
   const state = await readJson(defaultStatePath(), {})
   const configPath = state.config_path || defaultConfigPath()
   let parsed = {}
   if (existsSync(configPath)) {
     try {
-    parsed = parseToml(await readFile(configPath, 'utf8'))
+      parsed = parseToml(await readFile(configPath, 'utf8'))
     } catch (error) {
       addLog('desktop', `读取配置失败：${error instanceof Error ? error.message : String(error)}`)
     }
@@ -533,6 +692,11 @@ async function loadConfig() {
   return config
 }
 
+/**
+ * 保存配置（同时保存到 TOML 和桌面状态）
+ * @param config - 配置对象
+ * @returns 规范化后的配置
+ */
 async function saveConfig(config) {
   const normalized = normalizeConfig(config)
   if (normalized.launch_mode === 'launcher') {
@@ -544,15 +708,32 @@ async function saveConfig(config) {
   return normalized
 }
 
+// ============ URL 和参数构建 ============
+
+/**
+ * 构建本地服务 URL
+ * @param config - 配置对象
+ * @returns 完整的本地 URL
+ */
 function localUrl(config) {
   const host = config.host && config.host !== '0.0.0.0' ? config.host : '127.0.0.1'
   return `http://${host}:${config.port}`
 }
 
+/**
+ * 检查值是否非空
+ * @param value - 输入值
+ * @returns 是否有值
+ */
 function hasValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== ''
 }
 
+/**
+ * 解析额外命令行参数
+ * @param raw - 原始参数字符串
+ * @returns 参数数组
+ */
 function splitExtraArgs(raw) {
   const text = String(raw || '').replace(/\r?\n/g, ' ').trim()
   if (!text) {
@@ -595,12 +776,23 @@ function splitExtraArgs(raw) {
   return args
 }
 
+/**
+ * 条件性添加命令行参数
+ * @param args - 参数数组
+ * @param flag - 参数标志
+ * @param value - 参数值
+ */
 function pushArg(args, flag, value) {
   if (hasValue(value)) {
     args.push(flag, String(value))
   }
 }
 
+/**
+ * 构建 llama-server 命令行参数
+ * @param config - 配置对象
+ * @returns 参数数组
+ */
 function buildServerArgs(config) {
   const args = []
   pushArg(args, '--model', config.model)
@@ -636,16 +828,24 @@ function buildServerArgs(config) {
   pushArg(args, '--n-cpu-moe', config.n_cpu_moe)
   pushArg(args, '--log-verbosity', config.log_verbosity)
 
+  // 开关型参数
   if (config.cpu_moe) args.push('--cpu-moe')
   if (config.verbose) args.push('--verbose')
   args.push(config.webui ? '--webui' : '--no-webui')
   if (config.embeddings) args.push('--embeddings')
   args.push(config.continuous_batching ? '--cont-batching' : '--no-cont-batching')
+  
+  // 追加额外参数
   args.push(...splitExtraArgs(config.extra_args))
 
   return args
 }
 
+/**
+ * 为命令行参数添加引号（如果包含空格）
+ * @param value - 参数值
+ * @returns 带引号的参数
+ */
 function quoteCommandPart(value) {
   const text = String(value || '')
   if (!text) {
@@ -654,6 +854,11 @@ function quoteCommandPart(value) {
   return /[\s"]/u.test(text) ? `"${text.replace(/"/g, '\\"')}"` : text
 }
 
+/**
+ * 构建启动详情（命令、参数、工作目录等）
+ * @param config - 配置对象
+ * @returns 启动详情对象
+ */
 function buildLaunchDetails(config) {
   const directMode = config.launch_mode !== 'launcher'
   const command = directMode ? config.llama_server_path : config.launcher_path
@@ -679,6 +884,11 @@ function buildLaunchDetails(config) {
   }
 }
 
+/**
+ * 移除字符串两端的引号
+ * @param text - 输入文本
+ * @returns 移除引号后的文本
+ */
 function stripWrappingQuotes(text) {
   const value = String(text || '').trim()
   if (value.length >= 2) {
@@ -691,6 +901,11 @@ function stripWrappingQuotes(text) {
   return value
 }
 
+/**
+ * 规范化 Chat Template Kwargs 文本
+ * @param raw - 原始文本
+ * @returns 规范化后的 JSON 字符串
+ */
 function normalizeChatTemplateKwargsText(raw) {
   let text = stripWrappingQuotes(raw)
   if (!text) {
@@ -704,6 +919,11 @@ function normalizeChatTemplateKwargsText(raw) {
   return text
 }
 
+/**
+ * 解析 Chat Template Kwargs
+ * @param raw - 原始文本
+ * @returns 解析后的对象或 null
+ */
 function parseChatTemplateKwargs(raw) {
   const text = String(raw || '').trim()
   if (!text) {
@@ -722,11 +942,21 @@ function parseChatTemplateKwargs(raw) {
   return parsed
 }
 
+/**
+ * 创建请求超时信号
+ * @param config - 配置对象
+ * @returns AbortSignal
+ */
 function requestTimeoutSignal(config) {
   const ms = Math.max(30000, toNumber(config.request_timeout_ms, 600000))
   return AbortSignal.timeout(ms)
 }
 
+/**
+ * 提取消息文本内容（处理数组类型 content）
+ * @param content - 消息内容
+ * @returns 纯文本内容
+ */
 function messageTextContent(content) {
   if (Array.isArray(content)) {
     return content
@@ -738,6 +968,11 @@ function messageTextContent(content) {
   return String(content || '').trim()
 }
 
+/**
+ * 验证配置完整性
+ * @param config - 配置对象
+ * @returns 验证结果对象
+ */
 function validation(config) {
   return {
     configExists: config.launch_mode !== 'launcher' || existsSync(config.config_path),
@@ -748,6 +983,13 @@ function validation(config) {
   }
 }
 
+// ============ 文件类型检测 ============
+
+/**
+ * 获取文件的 MIME 类型
+ * @param filePath - 文件路径
+ * @returns MIME 类型字符串
+ */
 function mimeForFile(filePath) {
   const ext = path.extname(filePath).toLowerCase()
   return {
@@ -786,61 +1028,86 @@ function mimeForFile(filePath) {
   }[ext] || 'application/octet-stream'
 }
 
+/**
+ * 判断是否为文本类文件
+ * @param filePath - 文件路径
+ * @returns 是否为文本文件
+ */
 function isTextLike(filePath) {
   return [
-    '.txt',
-    '.md',
-    '.json',
-    '.toml',
-    '.yaml',
-    '.yml',
-    '.csv',
-    '.log',
-    '.py',
-    '.js',
-    '.ts',
-    '.tsx',
-    '.html',
-    '.css',
-    '.c',
-    '.cpp',
-    '.h',
-    '.hpp',
+    '.txt', '.md', '.json', '.toml', '.yaml', '.yml', '.csv', '.log',
+    '.py', '.js', '.ts', '.tsx', '.html', '.css', '.c', '.cpp', '.h', '.hpp',
   ].includes(path.extname(filePath).toLowerCase())
 }
 
+/**
+ * 判断是否为图片文件
+ * @param filePath - 文件路径
+ * @returns 是否为图片
+ */
 function isImageLike(filePath) {
   return ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'].includes(path.extname(filePath).toLowerCase())
 }
 
+/**
+ * 判断是否为音频文件
+ * @param filePath - 文件路径
+ * @returns 是否为音频
+ */
 function isAudioLike(filePath) {
   return ['.mp3', '.wav', '.flac', '.m4a', '.ogg'].includes(path.extname(filePath).toLowerCase())
 }
 
+/**
+ * 判断是否为 PDF 文件
+ * @param filePath - 文件路径
+ * @returns 是否为 PDF
+ */
 function isPdfLike(filePath) {
   return path.extname(filePath).toLowerCase() === '.pdf'
 }
 
+/**
+ * 判断是否为 Word 文档
+ * @param filePath - 文件路径
+ * @returns 是否为 Word
+ */
 function isWordLike(filePath) {
   return ['.docx', '.doc'].includes(path.extname(filePath).toLowerCase())
 }
 
+/**
+ * 判断是否为 Excel 文件
+ * @param filePath - 文件路径
+ * @returns 是否为 Excel
+ */
 function isExcelLike(filePath) {
   return ['.xlsx', '.xlsm', '.xls', '.xlsb'].includes(path.extname(filePath).toLowerCase())
 }
 
+/**
+ * 判断是否为文档类文件
+ * @param filePath - 文件路径
+ * @returns 是否为文档
+ */
 function isDocumentLike(filePath) {
   return isWordLike(filePath) || isExcelLike(filePath) || isTextLike(filePath)
 }
 
+/**
+ * 构建附件对象（解析文件内容）
+ * @param filePath - 文件路径
+ * @returns 附件对象
+ */
 async function buildAttachment(filePath) {
-  const stat = await import('node:fs/promises').then(fs => fs.stat(filePath))
+  const fileStat = await stat(filePath)
   const ext = path.extname(filePath).toLowerCase()
   const isWord = isWordLike(filePath)
   const isExcel = isExcelLike(filePath)
   const isPdf = isPdfLike(filePath)
   const isSimpleText = isTextLike(filePath)
   
+  // 确定附件类型
   let kind = 'file'
   if (isImageLike(filePath)) kind = 'image'
   else if (isAudioLike(filePath)) kind = 'audio'
@@ -849,16 +1116,18 @@ async function buildAttachment(filePath) {
   const attachment = {
     path: filePath,
     name: path.basename(filePath),
-    size: stat.size,
+    size: fileStat.size,
     mime: mimeForFile(filePath),
     kind,
   }
 
-  if (attachment.kind === 'image' && stat.size <= 10 * 1024 * 1024) {
+  // 图片附件：转换为 Base64
+  if (attachment.kind === 'image' && fileStat.size <= 10 * 1024 * 1024) {
     const raw = await readFile(filePath)
     attachment.dataUrl = `data:${attachment.mime};base64,${raw.toString('base64')}`
   }
 
+  // 文本附件：提取文本内容
   if (attachment.kind === 'text') {
     if (isWord) {
       try {
@@ -916,7 +1185,7 @@ async function buildAttachment(filePath) {
         addLog('desktop', `Excel解析失败：${message}`)
       }
     } else if (isPdf) {
-      if (stat.size > 100 * 1024 * 1024) {
+      if (fileStat.size > 100 * 1024 * 1024) {
         attachment.error = '文件过大（最大支持100MB），请使用PDF阅读器打开并复制文本内容'
       } else {
         try {
@@ -934,7 +1203,7 @@ async function buildAttachment(filePath) {
           attachment.error = '无法解析PDF文件，可能是加密或损坏的文件'
         }
       }
-    } else if (stat.size <= 256 * 1024) {
+    } else if (fileStat.size <= 256 * 1024) {
       attachment.text = await readFile(filePath, 'utf8')
     }
   }
@@ -942,11 +1211,20 @@ async function buildAttachment(filePath) {
   return attachment
 }
 
+/**
+ * 从流式响应中提取内容
+ * @param data - 响应数据
+ * @returns 内容字符串
+ */
 function contentFromStreamPayload(data) {
   const choice = data?.choices?.[0]
   return choice?.delta?.content || choice?.message?.content || data?.content || ''
 }
 
+/**
+ * 获取应用状态（配置、状态、日志、验证等）
+ * @returns 应用状态对象
+ */
 async function appState() {
   const config = await loadConfig()
   return {
@@ -958,6 +1236,11 @@ async function appState() {
   }
 }
 
+// ============ 窗口与托盘管理 ============
+
+/**
+ * 显示主窗口
+ */
 function showMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createMainWindow()
@@ -971,6 +1254,10 @@ function showMainWindow() {
   mainWindow.focus()
 }
 
+/**
+ * 获取状态标签文本
+ * @returns 状态文本
+ */
 function statusLabel() {
   return {
     stopped: '未启动',
@@ -981,6 +1268,9 @@ function statusLabel() {
   }[runtimeStatus.state] || runtimeStatus.state
 }
 
+/**
+ * 更新系统托盘菜单
+ */
 function updateTrayMenu() {
   if (!tray) {
     return
@@ -1023,6 +1313,9 @@ function updateTrayMenu() {
   ]))
 }
 
+/**
+ * 创建系统托盘
+ */
 function createTray() {
   if (tray) {
     return
@@ -1035,6 +1328,9 @@ function createTray() {
   updateTrayMenu()
 }
 
+/**
+ * 创建主窗口
+ */
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1380,
@@ -1065,6 +1361,7 @@ function createMainWindow() {
     mainWindow?.show()
   })
 
+  // 关闭窗口时最小化到托盘
   mainWindow.on('close', event => {
     if (appIsQuitting) {
       return
@@ -1081,9 +1378,15 @@ function createMainWindow() {
       })
     }
   })
+  
+  // 禁用默认菜单
   Menu.setApplicationMenu(null)
 }
 
+/**
+ * 使用 taskkill 终止进程（Windows 专用）
+ * @param pid - 进程 ID
+ */
 async function taskkill(pid) {
   await new Promise(resolve => {
     const child = spawn('taskkill.exe', ['/PID', String(pid), '/T', '/F'], {
@@ -1095,9 +1398,20 @@ async function taskkill(pid) {
   })
 }
 
+// ============ IPC 通信注册 ============
+
+/**
+ * 注册所有 IPC 处理程序
+ */
 function registerIpc() {
+  /**
+   * 获取应用状态
+   */
   ipcMain.handle('llama:get-state', async () => appState())
 
+  /**
+   * 设置主题（深色/浅色）
+   */
   ipcMain.handle('llama:set-theme', async (_event, isDark) => {
     if (mainWindow) {
       mainWindow.setTitleBarOverlay({
@@ -1110,6 +1424,9 @@ function registerIpc() {
     return { success: true }
   })
 
+  /**
+   * 保存配置
+   */
   ipcMain.handle('llama:save-config', async (_event, payload) => {
     const config = await saveConfig(payload.config)
     addLog('desktop', `配置已保存：${config.config_path}`)
@@ -1122,13 +1439,19 @@ function registerIpc() {
     }
   })
 
+  /**
+   * 启动服务器
+   */
   ipcMain.handle('llama:start-server', async (_event, payload) => {
+    // 如果服务器已在运行，直接返回状态
     if (serverChild && serverChild.exitCode === null) {
       return appState()
     }
 
     const config = await saveConfig(payload.config)
     const directMode = config.launch_mode !== 'launcher'
+    
+    // 验证文件存在性
     if (!directMode && !existsSync(config.launcher_path)) {
       throw new Error(`找不到启动器：${config.launcher_path}`)
     }
@@ -1138,11 +1461,13 @@ function registerIpc() {
     if (!existsSync(config.model)) {
       throw new Error(`找不到模型文件：${config.model}`)
     }
+    
     const launch = buildLaunchDetails(config)
     if (launch.error) {
       throw new Error(launch.error)
     }
 
+    // 重置状态
     logs = []
     stoppingServer = false
     setStatus({
@@ -1152,10 +1477,13 @@ function registerIpc() {
       url: localUrl(config),
       startedAt: new Date().toISOString(),
     })
+
     const serverDir = path.dirname(config.llama_server_path)
     const command = launch.command
     const args = launch.args
     const cwd = launch.cwd
+
+    // 记录启动信息
     addLog('desktop', `启动方式：${directMode ? 'direct llama-server.exe' : 'launcher'}`)
     addLog('desktop', `llama-server：${config.llama_server_path}`)
     if (directMode) {
@@ -1166,6 +1494,7 @@ function registerIpc() {
     addLog('desktop', `启动器：${config.launcher_path}`)
     addLog('desktop', `配置：${config.config_path}`)
 
+    // 启动进程
     serverChild = spawn(command, args, {
       cwd,
       windowsHide: true,
@@ -1178,12 +1507,18 @@ function registerIpc() {
     })
 
     setStatus({ pid: serverChild.pid })
+    
+    // 监听进程输出
     serverChild.stdout?.on('data', chunk => addLog('stdout', chunk))
     serverChild.stderr?.on('data', chunk => addLog('stderr', chunk))
+    
+    // 监听进程错误
     serverChild.once('error', error => {
       addLog('desktop', `启动失败：${error.message}`)
       setStatus({ state: 'error', message: error.message, pid: null })
     })
+    
+    // 监听进程退出
     serverChild.once('exit', code => {
       const message = stoppingServer ? '服务已停止' : `服务进程已退出：${code ?? 'unknown'}`
       addLog('desktop', message)
@@ -1199,6 +1534,9 @@ function registerIpc() {
     return appState()
   })
 
+  /**
+   * 停止服务器
+   */
   ipcMain.handle('llama:stop-server', async () => {
     if (serverChild && serverChild.exitCode === null) {
       stoppingServer = true
@@ -1208,6 +1546,9 @@ function registerIpc() {
     return appState()
   })
 
+  /**
+   * 测试服务健康状态
+   */
   ipcMain.handle('llama:test-health', async (_event, payload) => {
     const config = normalizeConfig(payload.config)
     const url = localUrl(config)
@@ -1219,6 +1560,9 @@ function registerIpc() {
     }
   })
 
+  /**
+   * 获取模型信息
+   */
   ipcMain.handle('llama:get-model-info', async (_event, payload) => {
     const config = normalizeConfig(payload?.config || {})
     const serverUrl = localUrl(config)
@@ -1273,9 +1617,14 @@ function registerIpc() {
     }
   })
 
+  /**
+   * 非流式聊天补全
+   */
   ipcMain.handle('llama:chat-completion', async (_event, payload) => {
     const config = normalizeConfig(payload.config)
     const url = `${localUrl(config)}/v1/chat/completions`
+    
+    // 处理消息和附件
     const messages = Array.isArray(payload.messages)
       ? payload.messages
           .filter(message => message && (message.role === 'user' || message.role === 'assistant' || message.role === 'system'))
@@ -1284,6 +1633,8 @@ function registerIpc() {
             const attachments = Array.isArray(message.attachments) ? message.attachments : []
             const ctxSize = Number(config.ctx_size) || 32768
             const maxContentLen = Math.max(0, Math.round((ctxSize - 8192) * 3.5))
+            
+            // 处理文本附件
             const textBlocks = attachments
               .filter(item => item.kind === 'text')
               .map(item => {
@@ -1297,14 +1648,18 @@ function registerIpc() {
                   : itemText
                 return `\n\n--- 附件：${item.name} ---\n${truncated}`
               })
+            
+            // 处理其他文件附件
             const fileBlocks = attachments
               .filter(item => item.kind !== 'text' && item.kind !== 'image' && item.kind !== 'pdf')
               .map(item => {
                 const note = item.error ? `解析失败：${item.error}` : item.warning ? `提示：${item.warning}` : ''
                 return `\n\n[附件：${item.name}，${item.mime || 'file'}${note ? `，${note}` : ''}]`
               })
+            
             const imageAttachments = attachments.filter(item => item.kind === 'image' && item.dataUrl)
 
+            // 图片消息使用多模态格式
             if (imageAttachments.length > 0) {
               return {
                 role: message.role,
@@ -1333,6 +1688,7 @@ function registerIpc() {
       throw new Error('没有可发送的消息')
     }
 
+    // 发送请求
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1362,11 +1718,19 @@ function registerIpc() {
     }
   })
 
+  /**
+   * 流式聊天补全
+   */
   ipcMain.handle('llama:chat-stream', async (_event, payload) => {
     const config = normalizeConfig(payload.config)
     const requestId = payload.requestId || `${Date.now()}`
     const url = `${localUrl(config)}/v1/chat/completions`
     const startedAt = Date.now()
+    
+    // 累积流式内容
+    let accumulatedContent = ''
+    
+    // 处理消息和附件（与非流式相同）
     const messages = Array.isArray(payload.messages)
       ? payload.messages
           .filter(message => message && (message.role === 'user' || message.role === 'assistant' || message.role === 'system'))
@@ -1394,8 +1758,10 @@ function registerIpc() {
                 const note = item.error ? `解析失败：${item.error}` : item.warning ? `提示：${item.warning}` : ''
                 return `\n\n[附件：${item.name}，${item.mime || 'file'}${note ? `，${note}` : ''}]`
               })
+            
             const imageAttachments = attachments.filter(item => item.kind === 'image' && item.dataUrl)
 
+            // 图片消息使用多模态格式
             if (imageAttachments.length > 0) {
               return {
                 role: message.role,
@@ -1424,240 +1790,206 @@ function registerIpc() {
       throw new Error('没有可发送的消息')
     }
 
-    addLog('chat', `request ${requestId}: ${messages.length} messages -> ${url}`)
+    // 发送流式请求
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: path.basename(config.model || 'local-model'),
+        messages,
+        temperature: toNumber(config.temp, 0.8),
+        top_p: toNumber(config.top_p, 0.95),
+        max_tokens: config.n_predict === -1 ? undefined : toNumber(config.n_predict, undefined),
+        chat_template_kwargs: parseChatTemplateKwargs(config.chat_template_kwargs) || undefined,
+        stream: true,
+      }),
+      signal: requestTimeoutSignal(config),
+    })
 
-    chatAbortController = new AbortController()
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      throw new Error(`模型接口返回 ${response.status}${text ? `：${text.slice(0, 500)}` : ''}`)
+    }
 
-    let response
-    let result
-    let content = ''
-    let raw = null
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: path.basename(config.model || 'local-model'),
-          messages,
-          temperature: toNumber(config.temp, 0.8),
-          top_p: toNumber(config.top_p, 0.95),
-          max_tokens: config.n_predict === -1 ? undefined : toNumber(config.n_predict, undefined),
-          chat_template_kwargs: parseChatTemplateKwargs(config.chat_template_kwargs) || undefined,
-          stream: true,
-        }),
-        signal: chatAbortController.signal,
-      })
+    // 处理流式响应
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法获取响应流')
+    }
 
-      if (!response.ok) {
-        const text = await response.text().catch(() => '')
-        const message = `模型接口返回 ${response.status}${text ? `：${text.slice(0, 500)}` : ''}`
-        addLog('chat', `request failed: ${message}`)
-        chatAbortController = null
-        throw new Error(message)
-      }
+    let buffer = ''
+    const decoder = new TextDecoder('utf-8')
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        addLog('chat', 'request failed: response body is not a readable stream')
-        chatAbortController = null
-        throw new Error('模型接口没有返回可读取的流')
-      }
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-      const decoder = new TextDecoder('utf-8')
-      let buffer = ''
-      let streamAnnounced = false
+      buffer += decoder.decode(value, { stream: true })
+      
+      // 解析 SSE 格式
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
 
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const parts = buffer.split(/\r?\n\r?\n/)
-        buffer = parts.pop() || ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        
+        const dataText = line.slice(6).trim()
+        if (!dataText) continue
+        if (dataText === '[DONE]') {
+          sendEvent({ type: 'chat-stream-done', requestId, done: true, content: accumulatedContent })
+          break
+        }
 
-        for (const part of parts) {
-          const lines = part
-            .split(/\r?\n/)
-            .map(line => line.trim())
-            .filter(line => line.startsWith('data:'))
-            .map(line => line.slice(5).trim())
-
-          for (const line of lines) {
-            if (!line || line === '[DONE]') continue
-            try {
-              const data = JSON.parse(line)
-              raw = data
-              const delta = contentFromStreamPayload(data)
-              if (delta) {
-                if (!streamAnnounced) {
-                  addLog('chat', `streaming response for ${requestId}`)
-                  streamAnnounced = true
-                }
-                content += delta
-                sendEvent({ type: 'chat-stream', requestId, delta })
-              }
-            } catch {
-            }
+        try {
+          const data = JSON.parse(dataText)
+          const content = contentFromStreamPayload(data)
+          if (content) {
+            accumulatedContent += content
+            sendEvent({ type: 'chat-stream', requestId, delta: content })
           }
+        } catch {
+          // 忽略解析错误的行
         }
       }
+    }
 
-      const elapsed = Math.max(0.1, (Date.now() - startedAt) / 1000)
-      const approxTokens = Math.max(1, Math.round(String(content || '').length / 3))
-      addLog('chat', `stream done: ${approxTokens} approx tokens, ${elapsed.toFixed(1)}s`)
-      sendEvent({ type: 'chat-stream', requestId, done: true, content })
-      result = { ok: true, content, raw }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        addLog('chat', `chat stream aborted: ${requestId}`)
-        return { ok: true, content: content || '', raw: null }
-      }
-      const message = error instanceof Error ? error.message : String(error)
-      addLog('chat', `request failed: ${message}`)
-      throw error
-    } finally {
+    sendEvent({ type: 'chat-stream-done', requestId, done: true, content: accumulatedContent })
+    return { ok: true, done: true, content: accumulatedContent }
+  })
+
+  /**
+   * 中断流式聊天
+   */
+  ipcMain.handle('llama:abort-chat', async () => {
+    if (chatAbortController) {
+      chatAbortController.abort()
       chatAbortController = null
     }
-
-    return result
-})
-
-  ipcMain.handle('llama:chat-abort', async () => {
-    if (chatAbortController) {
-      addLog('chat', 'aborting chat stream')
-      chatAbortController.abort()
-      return { ok: true }
-    }
-    return { ok: false, error: 'no active chat stream' }
+    return { ok: true }
   })
 
-  ipcMain.handle('llama:pick-file', async (_event, payload) => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: payload?.properties || ['openFile'],
-      filters: payload?.filters || [{ name: 'All Files', extensions: ['*'] }],
-    })
-    return result.canceled ? null : result.filePaths[0]
-  })
-
-  ipcMain.handle('llama:pick-attachments', async (_event, payload) => {
-    const kind = payload?.kind || 'file'
-    const filterMap = {
-      image: [
-        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      audio: [
-        { name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'm4a', 'ogg'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      text: [
-        { name: 'Documents', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'log', 'py', 'js', 'ts', 'tsx', 'html', 'css', 'c', 'cpp', 'h', 'hpp', 'docx', 'doc', 'xlsx', 'xlsm', 'xls', 'xlsb', 'pdf'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      pdf: [
-        { name: 'PDF', extensions: ['pdf'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      document: [
-        { name: 'Word Documents', extensions: ['docx', 'doc'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      spreadsheet: [
-        { name: 'Excel Spreadsheets', extensions: ['xlsx', 'xlsm', 'xls', 'xlsb'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      file: [
-        { name: 'Documents and Images', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'log', 'py', 'js', 'ts', 'tsx', 'html', 'css', 'pdf', 'docx', 'doc', 'xlsx', 'xlsm', 'xls', 'xlsb', 'mp3', 'wav', 'flac', 'm4a', 'ogg', 'png', 'jpg', 'jpeg', 'webp'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    }
-    const filters = filterMap[kind] || filterMap.file
-
+  /**
+   * 选择文件（用于上传附件）
+   */
+  ipcMain.handle('llama:select-files', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile', 'multiSelections'],
-      filters,
+      filters: [
+        { name: 'All Files', extensions: ['*'] },
+        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] },
+        { name: 'Documents', extensions: ['txt', 'md', 'pdf', 'docx', 'doc', 'xlsx', 'xls'] },
+        { name: 'Text Files', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv'] },
+      ],
     })
 
-    if (result.canceled) {
-      return []
+    if (result.canceled || !result.filePaths.length) {
+      return { canceled: true, paths: [] }
     }
 
-    const attachments = []
-    for (const filePath of result.filePaths) {
-      try {
-        attachments.push(await buildAttachment(filePath))
-      } catch (error) {
-        attachments.push({
-          path: filePath,
-          name: path.basename(filePath),
-          size: 0,
-          mime: mimeForFile(filePath),
-          kind: 'file',
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    }
-    return attachments
+    const attachments = await Promise.all(
+      result.filePaths.map(filePath => buildAttachment(filePath))
+    )
+
+    return { canceled: false, paths: result.filePaths, attachments }
   })
 
-  ipcMain.handle('llama:reveal-path', async (_event, payload) => {
-    if (payload?.filePath) {
-      shell.showItemInFolder(payload.filePath)
+  /**
+   * 选择模型文件
+   */
+  ipcMain.handle('llama:select-model', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'GGUF Models', extensions: ['gguf'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+
+    return {
+      canceled: result.canceled,
+      path: result.filePaths?.[0] || '',
     }
+  })
+
+  /**
+   * 选择配置文件
+   */
+  ipcMain.handle('llama:select-config', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'TOML Files', extensions: ['toml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+
+    return {
+      canceled: result.canceled,
+      path: result.filePaths?.[0] || '',
+    }
+  })
+
+  /**
+   * 选择目录
+   */
+  ipcMain.handle('llama:select-directory', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+    })
+
+    return {
+      canceled: result.canceled,
+      path: result.filePaths?.[0] || '',
+    }
+  })
+
+  /**
+   * 打开外部链接
+   */
+  ipcMain.handle('llama:open-url', async (_event, url) => {
+    await shell.openExternal(url)
     return { ok: true }
   })
 
-  ipcMain.handle('llama:open-url', async (_event, payload) => {
-    if (payload?.url) {
-      await shell.openExternal(payload.url)
-    }
+  /**
+   * 退出应用
+   */
+  ipcMain.handle('llama:quit', async () => {
+    appIsQuitting = true
+    app.quit()
     return { ok: true }
-  })
-
-  ipcMain.handle('llama:save-file', async (_event, payload) => {
-    const { content, defaultPath, filters } = payload
-    const result = await dialog.showSaveDialog(mainWindow, {
-      defaultPath,
-      filters: filters || [{ name: 'JSON Files', extensions: ['json'] }, { name: 'All Files', extensions: ['*'] }],
-    })
-    if (result.canceled) {
-      return { ok: false, canceled: true }
-    }
-    try {
-      await writeFile(result.filePath, content, 'utf8')
-      return { ok: true, filePath: result.filePath }
-    } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : String(error) }
-    }
   })
 }
 
-const gotLock = app.requestSingleInstanceLock()
-if (!gotLock) {
+// ============ 应用启动与生命周期 ============
+
+/**
+ * 应用就绪后初始化
+ */
+async function onAppReady() {
+  createTray()
+  createMainWindow()
+  registerIpc()
+  addLog('desktop', 'illama Desktop 启动')
+}
+
+/**
+ * 应用退出前清理
+ */
+async function onAppBeforeQuit() {
+  appIsQuitting = true
+  if (serverChild && serverChild.exitCode === null) {
+    stoppingServer = true
+    setStatus({ state: 'stopping', message: '正在停止服务' })
+    await taskkill(serverChild.pid)
+  }
+}
+
+// 注册应用生命周期事件
+app.on('ready', onAppReady)
+app.on('before-quit', onAppBeforeQuit)
+
+// 防止多实例运行
+if (!app.requestSingleInstanceLock()) {
   app.quit()
-} else {
-  app.whenReady().then(() => {
-    registerIpc()
-    createTray()
-    createMainWindow()
-  })
-
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      showMainWindow()
-    }
-  })
-
-  app.on('before-quit', async event => {
-    appIsQuitting = true
-    if (serverChild && serverChild.exitCode === null && !stoppingServer) {
-      event.preventDefault()
-      stoppingServer = true
-      await taskkill(serverChild.pid)
-      app.quit()
-    }
-  })
-
-  app.on('window-all-closed', () => {
-    // Keep the local server alive in the system tray.
-  })
 }

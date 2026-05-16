@@ -1,3 +1,4 @@
+// 聊天输入组件 - 处理用户输入、附件选择和发送
 import React, { useState, useRef, useEffect } from 'react'
 import type { Attachment } from '../types'
 import { escapeHtml, modelName } from '../utils'
@@ -27,10 +28,12 @@ export function ChatInput({
   onRemoveAttachment,
   onOpenModelInfo,
 }: ChatInputProps) {
+  // 附件菜单状态
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const [attachmentMenuPosition, setAttachmentMenuPosition] = useState<{ left: number; top: number } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // 点击外部关闭附件菜单
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -42,6 +45,7 @@ export function ChatInput({
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
+  // 处理附件按钮点击 - 定位菜单
   const handleAttachButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
@@ -49,6 +53,7 @@ export function ChatInput({
     const menuHeight = 252
     const gap = 8
     const minPad = 12
+    // 计算菜单位置，确保在视口内
     const left = Math.min(Math.max(rect.left, minPad), window.innerWidth - menuWidth - minPad)
     const below = rect.bottom + gap
     const above = rect.top - menuHeight - gap
@@ -60,6 +65,7 @@ export function ChatInput({
     setAttachmentMenuOpen(true)
   }
 
+  // 处理键盘事件 - Enter 发送
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -67,6 +73,7 @@ export function ChatInput({
     }
   }
 
+  // 获取附件类型标签
   const attachmentLabel = (kind: string) => {
     const labels: Record<string, string> = {
       image: '图片',
@@ -83,6 +90,7 @@ export function ChatInput({
   return (
     <>
       <div className="composer-wrap">
+        {/* 附件预览区 */}
         {attachments.length > 0 && (
           <div className="attachment-row">
             {attachments.map((attachment, index) => (
@@ -101,6 +109,7 @@ export function ChatInput({
             ))}
           </div>
         )}
+        {/* 输入框主区域 */}
         <div className="composer">
           <div className="attach-wrap">
             <button
@@ -121,6 +130,7 @@ export function ChatInput({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
           />
+          {/* 模型信息按钮 */}
           <button
             className="model-chip model-trigger"
             type="button"
@@ -130,6 +140,7 @@ export function ChatInput({
             <span className="model-chip-icon">☯</span>
             <span className="model-chip-label">{escapeHtml(modelName(String(config?.model)))}</span>
           </button>
+          {/* 发送/停止按钮 */}
           <button
             className={`send-btn ${chatBusy ? 'stop-btn' : (chatInput.trim() || attachments.length ? 'active' : '')}`}
             type="button"
@@ -142,9 +153,10 @@ export function ChatInput({
         <div className="composer-hint">按住 Enter 发送，Shift + Enter 换行</div>
       </div>
 
+      {/* 附件选择菜单 */}
       {attachmentMenuOpen && attachmentMenuPosition && (
         <>
-          <div className="attach-menu-backdrop" onClick={() => setAttachmentMenuOpen(false)} />
+          <div className="attach-menu-backdrop" onClick={() => setAttachmentMenuOpen(false)}></div>
           <div
             className="attach-menu"
             style={{ left: attachmentMenuPosition.left, top: attachmentMenuPosition.top }}

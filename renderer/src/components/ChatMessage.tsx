@@ -1,3 +1,4 @@
+// 聊天消息组件 - 展示用户、助手和系统消息
 import { useRef, useEffect, memo, type ReactElement } from 'react'
 import type { ChatMessage as ChatMessageType } from '../types'
 import { escapeHtml, highlightCode, splitCodeParts, renderTextBlock, splitThinkingOutput, canPreviewCode, estimateTokens } from '../utils'
@@ -15,25 +16,31 @@ interface ChatMessageProps {
 export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry, onDelete }: ChatMessageProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // 流式生成时自动滚动到最新内容
   useEffect(() => {
     if (message.streaming && contentRef.current) {
       contentRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
   }, [message.streaming])
 
+  // 渲染消息内容
   const renderContent = () => {
     const content = String(message.content || '')
+    // 正在生成时显示加载状态
     if (!content && message.role === 'assistant' && chatBusy) {
       return <div className="bubble"><div className="typing-line">正在生成...</div></div>
     }
+    // 用户或系统消息
     if (message.role !== 'assistant') {
       return content ? <div className="bubble" dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} /> : null
     }
 
+    // 正在流式生成
     if (message.streaming) {
       return <div className="bubble" dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} />
     }
 
+    // 完整助手消息 - 处理思考过程和代码块
     const counter = { value: 0 }
     const { answer, thoughts } = splitThinkingOutput(content)
     const showThinking = true
@@ -41,6 +48,7 @@ export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy,
 
     const output: ReactElement[] = []
 
+    // 显示思考过程
     if (showThinking && thoughts.length > 0) {
       output.push(
         <details key="thoughts" className="think-block" open={expandThinking}>
@@ -50,6 +58,7 @@ export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy,
       )
     }
 
+    // 显示回答
     if (answer) {
       output.push(<div key="answer">{renderCodeAwareText(answer, counter)}</div>)
     }
@@ -58,16 +67,19 @@ export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy,
     return <div className="bubble">{innerContent}</div>
   }
 
+  // 渲染支持代码块的文本
   const renderCodeAwareText = (text: string, counter: { value: number }) => {
     return splitCodeParts(String(text || '')).map((part, idx) => {
+      // 普通文本
       if (part.type === 'text') {
         return <span key={idx} dangerouslySetInnerHTML={{ __html: renderTextBlock(part.value) }} />
       }
+      // 代码块
       const codeIndex = counter.value
       counter.value += 1
       const language = part.language || 'text'
       const previewable = canPreviewCode(language, part.value)
-      const codeValue = String(part.value || '').replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/g, '')
+      const codeValue = String(part.value || '').replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/, '')
       
       const codeContent = highlightCode(codeValue, language)
       
@@ -88,6 +100,7 @@ export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy,
     })
   }
 
+  // 渲染消息元信息（模型、token数、延迟等）
   const renderMeta = () => {
     if (message.role !== 'assistant') return null
     const tokens = message.tokens || message.estimatedTokens || estimateTokens(message.content)
@@ -105,6 +118,7 @@ export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy,
     )
   }
 
+  // 只有助手消息可以重试
   const canRetry = message.role === 'assistant'
 
   return (

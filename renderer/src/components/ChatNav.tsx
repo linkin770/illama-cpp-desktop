@@ -1,3 +1,4 @@
+// 聊天导航组件 - 快速跳转到用户消息
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 
@@ -18,10 +19,12 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
   const activeIdxRef = useRef(-1)
   const [navRight, setNavRight] = useState(16)
 
+  // 过滤出用户消息
   const userMessages = chatMessages
     .map((msg, i) => ({ msg, i }))
     .filter(({ msg }) => msg.role === 'user' && String(msg.content || '').trim())
 
+  // 更新当前活跃消息 - 根据滚动位置判断哪个消息在视口内
   const updateCurrentMessage = useCallback(() => {
     const userEls = [...document.querySelectorAll('.message.user')]
     if (!userEls.length) return
@@ -50,6 +53,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       activeIdxRef.current = bestIdx
       setActiveIdx(bestIdx)
 
+      // 滚动导航到当前活跃项
       const navBar = document.getElementById('chat-nav-bar')
       const activeItem = navBar?.querySelector('.nav-item.active') as HTMLElement
       if (navBar && activeItem) {
@@ -61,6 +65,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }
   }, [])
 
+  // 监听滚动事件
   useEffect(() => {
     const onScroll = () => {
       if (!scrollThrottleRef.current) {
@@ -71,14 +76,20 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       }
     }
 
-    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    // 监听 #chatFeed 元素的滚动事件
+    const feed = document.getElementById('chatFeed')
+    if (feed) {
+      feed.addEventListener('scroll', onScroll, { passive: true })
+    }
 
+    // 初始时设置最后一条消息为活跃
     const lastUserIdx = userMessages.length - 1
     if (lastUserIdx >= 0) {
       activeIdxRef.current = lastUserIdx
       setActiveIdx(lastUserIdx)
     }
 
+    // 延迟执行一次更新
     setTimeout(() => {
       updateCurrentMessage()
       const navBar = document.getElementById('chat-nav-bar')
@@ -92,11 +103,14 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }, 300)
 
     return () => {
-      document.removeEventListener('scroll', onScroll, { capture: true })
+      if (feed) {
+        feed.removeEventListener('scroll', onScroll)
+      }
       if (scrollThrottleRef.current) clearTimeout(scrollThrottleRef.current)
     }
   }, [chatMessages, userMessages.length, updateCurrentMessage])
 
+  // 更新导航条位置 - 跟随输入框右侧
   useEffect(() => {
     const updateNavPosition = () => {
       const composer = document.querySelector('.composer') as HTMLElement
@@ -110,6 +124,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     updateNavPosition()
     window.addEventListener('resize', updateNavPosition)
 
+    // 监听 DOM 变化
     const observer = new MutationObserver(updateNavPosition)
     observer.observe(document.body, { childList: true, subtree: true, attributes: true })
 
@@ -119,6 +134,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }
   }, [])
 
+  // 鼠标悬停时展开导航条
   useEffect(() => {
     const navBar = navRef.current
     if (!navBar) return
@@ -143,11 +159,13 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }
   }, [userMessages])
 
+  // 点击导航项跳转到对应消息
   const handleNavClick = (idx: number) => {
     const userEls = [...document.querySelectorAll('.message.user')]
     const el = userEls[idx]
     if (!el) return
 
+    // 滚动到目标消息
     const feed = document.getElementById('chatFeed')
     if (feed) {
       const feedRect = feed.getBoundingClientRect()
@@ -158,6 +176,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
 
+    // 高亮目标消息
     const bubble = el.querySelector('.bubble') || el
     bubble.classList.remove('nav-flash')
     void (bubble as HTMLElement).offsetWidth
@@ -165,6 +184,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     setTimeout(() => bubble.classList.remove('nav-flash'), 700)
   }
 
+  // 鼠标悬停显示提示
   const handleMouseEnterItem = (idx: number, text: string) => {
     if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current)
     tooltipTimerRef.current = setTimeout(() => {
@@ -173,9 +193,11 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       const item = items?.[idx] as HTMLElement
       if (!item || !navBar) return
 
+      // 检查文本是否溢出
       const textSpan = item.querySelector('.nav-text') as HTMLElement
       if (textSpan && textSpan.scrollWidth <= textSpan.clientWidth) return
 
+      // 显示提示
       setTooltipText(text)
       const rect = item.getBoundingClientRect()
       const navRect = navBar.getBoundingClientRect()
@@ -188,12 +210,14 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }, 800)
   }
 
+  // 鼠标离开隐藏提示
   const handleMouseLeaveItem = () => {
     if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current)
     setTooltipText('')
     setTooltipStyle({ display: 'none' })
   }
 
+  // 没有用户消息时不显示导航
   if (userMessages.length === 0) return null
 
   return (
