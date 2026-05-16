@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, memo, type ReactElement } from 'react'
 import type { ChatMessage as ChatMessageType } from '../types'
 import { escapeHtml, highlightCode, splitCodeParts, renderTextBlock, splitThinkingOutput, canPreviewCode, estimateTokens } from '../utils'
 
@@ -12,7 +12,7 @@ interface ChatMessageProps {
   onDelete: (index: number) => void
 }
 
-export function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry, onDelete }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry, onDelete }: ChatMessageProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -24,10 +24,14 @@ export function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry,
   const renderContent = () => {
     const content = String(message.content || '')
     if (!content && message.role === 'assistant' && chatBusy) {
-      return <div className="typing-line">正在生成...</div>
+      return <div className="bubble"><div className="typing-line">正在生成...</div></div>
     }
     if (message.role !== 'assistant') {
-      return content ? <div dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} /> : null
+      return content ? <div className="bubble" dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} /> : null
+    }
+
+    if (message.streaming) {
+      return <div className="bubble" dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} />
     }
 
     const counter = { value: 0 }
@@ -35,7 +39,7 @@ export function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry,
     const showThinking = true
     const expandThinking = false
 
-    const output: JSX.Element[] = []
+    const output: ReactElement[] = []
 
     if (showThinking && thoughts.length > 0) {
       output.push(
@@ -50,7 +54,8 @@ export function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry,
       output.push(<div key="answer">{renderCodeAwareText(answer, counter)}</div>)
     }
 
-    return output.length > 0 ? output : <div dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} />
+    const innerContent = output.length > 0 ? output : <div dangerouslySetInnerHTML={{ __html: renderTextBlock(content) }} />
+    return <div className="bubble">{innerContent}</div>
   }
 
   const renderCodeAwareText = (text: string, counter: { value: number }) => {
@@ -121,4 +126,4 @@ export function ChatMessage({ message, index, chatBusy, onCopy, onEdit, onRetry,
       </div>
     </article>
   )
-}
+})

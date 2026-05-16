@@ -1,4 +1,25 @@
+export interface LlamaDesktopAPI {
+  saveConfig(opts: { config: Record<string, unknown> | null }): Promise<{ ok: boolean; config?: Config; validation?: Validation; status?: Status; logs?: LogEntry[]; launch?: Record<string, unknown> }>
+  startServer(opts: { config: Record<string, unknown> | null }): Promise<{ ok: boolean; config?: Config; validation?: Validation; status?: Status; logs?: LogEntry[]; launch?: Record<string, unknown>; url?: string }>
+  stopServer(): Promise<{ ok: boolean; config?: Config; validation?: Validation; status?: Status; logs?: LogEntry[]; launch?: Record<string, unknown> }>
+  testHealth(opts: { config: Record<string, unknown> | null }): Promise<{ ok: boolean; url?: string; message?: string }>
+  getModelInfo(opts: { config: Record<string, unknown> | null }): Promise<Record<string, unknown>>
+  pickAttachments(opts: { kind: string }): Promise<Attachment[]>
+  pickFile(opts?: { properties?: string[]; filters?: Array<{ name: string; extensions: string[] }> }): Promise<string | null>
+  streamChat(opts: { requestId: string; config: Record<string, unknown> | null; messages: Array<{ role: string; content: string }> }): Promise<{ content: string; raw?: { usage?: { completion_tokens: number; total_tokens: number } } }>
+  abortChat(): Promise<void>
+  getState(): Promise<{ config?: Config; validation?: Validation; status?: Status; logs?: LogEntry[]; launch?: Record<string, unknown> }>
+  onEvent(handler: (payload: unknown) => void): () => void
+}
+
+declare global {
+  interface Window {
+    llamaDesktop: LlamaDesktopAPI
+  }
+}
+
 export interface Config {
+  [key: string]: unknown
   launch_mode?: string
   config_path?: string
   launcher_path?: string
@@ -24,6 +45,14 @@ export interface Config {
   min_p?: number
   presence_penalty?: number
   repeat_penalty?: number
+  frequency_penalty?: number
+  repeat_last_n?: number
+  tfs_z?: number
+  typical_p?: number
+  dry_multiplier?: number
+  dry_base?: number
+  dry_allowed_length?: number
+  dry_penalty_last_n?: number
   threads?: number
   threads_batch?: number
   batch_size?: number
@@ -37,6 +66,7 @@ export interface Config {
   show_raw_output?: boolean
   show_thinking?: boolean
   expand_thinking?: boolean
+  extra_args?: string
 }
 
 export interface Status {
@@ -124,4 +154,4 @@ export interface AppState {
   isDraggingScrollbar: boolean
 }
 
-export type SettingsSectionId = 'paths' | 'model' | 'runtime' | 'sampling' | 'system' | 'logs' | 'chat'
+export type SettingsSectionId = 'overview' | 'display' | 'sampling' | 'mcp' | 'developer' | 'logs'

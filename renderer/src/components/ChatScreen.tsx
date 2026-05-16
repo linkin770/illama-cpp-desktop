@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import type { ChatMessage, Attachment } from '../types'
 import { ChatMessage as ChatMessageComponent } from './ChatMessage'
 import { ChatInput } from './ChatInput'
@@ -40,46 +40,108 @@ export function ChatScreen({
 }: ChatScreenProps) {
   const chatFeedRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const stickToBottomRef = useRef(true)
+  const isDraggingScrollbarRef = useRef(false)
+
+  const isNearBottom = useCallback((el: HTMLDivElement) => {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 96
+  }, [])
 
   useEffect(() => {
+    const feed = chatFeedRef.current
+    if (!feed) return
+
     const handleScroll = () => {
-      if (chatFeedRef.current) {
-        const { scrollHeight, scrollTop, clientHeight } = chatFeedRef.current
-        setShowScrollButton(scrollHeight - scrollTop - clientHeight > 200)
+      if (isDraggingScrollbarRef.current) return
+      const near = isNearBottom(feed)
+      if (stickToBottomRef.current && !near) {
+        stickToBottomRef.current = false
+      } else if (!stickToBottomRef.current && near) {
+        stickToBottomRef.current = true
+      }
+      setShowScrollButton(!near)
+    }
+
+    feed.addEventListener('scroll', handleScroll, { passive: true })
+    return () => feed.removeEventListener('scroll', handleScroll)
+  }, [isNearBottom])
+
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (target === chatFeedRef.current || target.closest('.chat-feed')) {
+        const feed = chatFeedRef.current
+        if (!feed) return
+        const rect = feed.getBoundingClientRect()
+        if (event.clientX > rect.right - 12) {
+          isDraggingScrollbarRef.current = true
+          stickToBottomRef.current = false
+        }
       }
     }
 
-    const feed = chatFeedRef.current
-    feed?.addEventListener('scroll', handleScroll)
-    handleScroll()
+    const handleMouseUp = () => {
+      if (isDraggingScrollbarRef.current) {
+        isDraggingScrollbarRef.current = false
+        const feed = chatFeedRef.current
+        if (feed && isNearBottom(feed)) {
+          stickToBottomRef.current = true
+        }
+      }
+    }
 
-    return () => feed?.removeEventListener('scroll', handleScroll)
-  }, [chatMessages.length])
+    const handleTouchStart = () => {
+      isDraggingScrollbarRef.current = true
+      stickToBottomRef.current = false
+    }
+
+    const handleTouchEnd = () => {
+      if (isDraggingScrollbarRef.current) {
+        isDraggingScrollbarRef.current = false
+        const feed = chatFeedRef.current
+        if (feed && isNearBottom(feed)) {
+          stickToBottomRef.current = true
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    document.addEventListener('touchend', handleTouchEnd, { passive: true })
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [isNearBottom])
 
   useEffect(() => {
-    if (chatFeedRef.current && chatMessages.length > 0) {
-      chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight
+    const feed = chatFeedRef.current
+    if (!feed || chatMessages.length === 0) return
+    if (stickToBottomRef.current && !isDraggingScrollbarRef.current) {
+      feed.scrollTop = feed.scrollHeight
     }
   }, [chatMessages])
 
   const scrollToBottom = () => {
     if (chatFeedRef.current) {
-      chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight
+      chatFeedRef.current.scrollTo({ top: chatFeedRef.current.scrollHeight, behavior: 'smooth' })
+      stickToBottomRef.current = true
     }
   }
 
   if (chatMessages.length === 0) {
     return (
       <section className="chat-screen empty-chat">
-        <div className="chat-feed" ref={chatFeedRef}>
+        <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
           <div className="empty-state">
             <h1>illama.exe</h1>
             <p>无需命令行，就能管理本地AI服务。它既是控制台，也是聊天室，更是连接OpenClaw、Claude Code等外部工具的桥梁。</p>
           </div>
         </div>
-        <button className="scroll-to-bottom-btn" data-action="scroll-to-bottom" title="回到最新" onClick={scrollToBottom}>
-          ↓回到最新
-        </button>
         <ChatInput
           chatInput={chatInput}
           attachments={attachments}
@@ -98,7 +160,7 @@ export function ChatScreen({
 
   return (
     <section className="chat-screen">
-      <div className="chat-feed" ref={chatFeedRef}>
+      <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
         {chatMessages.map((message, index) => (
           <ChatMessageComponent
             key={index}
@@ -113,7 +175,7 @@ export function ChatScreen({
         ))}
       </div>
       {showScrollButton && (
-        <button className="scroll-to-bottom-btn" data-action="scroll-to-bottom" title="回到最新" onClick={scrollToBottom}>
+        <button className="scroll-to-bottom-btn visible" data-action="scroll-to-bottom" title="回到最新" onClick={scrollToBottom}>
           ↓回到最新
         </button>
       )}

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import type { Session, Status } from '../types'
 import { escapeHtml, statusLabel, statusClass, shortTime } from '../utils'
 
@@ -54,6 +54,16 @@ export function Sidebar({
     .filter(session => !historySearch || String(session.title || '').toLowerCase().includes(historySearch.toLowerCase()))
     .slice(0, 28)
 
+  const historyListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!historyListRef.current) return
+    const activeEl = historyListRef.current.querySelector('.history-row.active')
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [currentSessionId])
+
   return (
     <aside className="sidebar">
         <div className="brand-row">
@@ -97,7 +107,7 @@ export function Sidebar({
         />
 
         <div className="side-section-label">历史对话</div>
-        <div className="history-list">
+        <div className="history-list" ref={historyListRef}>
           {filteredSessions.length > 0 ? (
             filteredSessions.map(session => (
               <div key={session.id} className={`history-row ${session.id === currentSessionId ? 'active' : ''}`}>
@@ -109,7 +119,7 @@ export function Sidebar({
                   onClick={() => onOpenSession(session.id)}
                 >
                   <strong>{escapeHtml(session.title || '新聊天')}</strong>
-                  <span>{escapeHtml(shortTime(session.updatedAt))}</span>
+                  <span>{escapeHtml(shortTime(new Date(session.updatedAt)))}</span>
                 </button>
                 <button
                   type="button"

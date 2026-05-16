@@ -1,35 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test</title>
-  </head>
-  <body>
-    <div id="app">Loading...</div>
-    <script type="module">
-      try {
-        console.log('Testing imports...');
-        const { state } = await import('./js/state.js');
-        console.log('state imported:', state);
-        
-        const { escapeHtml } = await import('./js/utils.js');
-        console.log('utils imported');
-        
-        const { modelName } = await import('./js/messages.js');
-        console.log('messages imported');
-        
-        const { renderChat } = await import('./js/chat.js');
-        console.log('chat imported');
-        
-        const { renderPreviewModal } = await import('./js/components.js');
-        console.log('components imported');
-        
-        document.getElementById('app').innerHTML = '<div style="color: green;">All imports successful!</div>';
-      } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('app').innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
-      }
-    </script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test React</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: sans-serif; }
+    .app-shell { display: grid; grid-template-columns: 288px 1fr; height: 100vh; }
+    .sidebar { background: #f5f5f5; padding: 20px; border-right: 1px solid #ddd; }
+    .main-area { padding: 20px; }
+  </style>
+</head>
+<body>
+  <div id="app-root"></div>
+  <script type="module" src="dist/main.js"></script>
+</body>
 </html>

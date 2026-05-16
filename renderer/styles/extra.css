@@ -1,3 +1,26 @@
+.toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  background: rgba(30, 33, 28, 0.96);
+  border: 1px solid #46464B;
+  color: #f0f0f0;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .message.user .bubble:has(.attachment-row),
 .message.user .bubble:has(.attachment-card),
 .message.user .bubble:has(.chat-image-attachment) {

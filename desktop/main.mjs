@@ -77,6 +77,14 @@ function defaultConfig() {
     min_p: 0,
     presence_penalty: 1.5,
     repeat_penalty: '',
+    frequency_penalty: '',
+    repeat_last_n: '',
+    tfs_z: '',
+    typical_p: '',
+    dry_multiplier: '',
+    dry_base: '',
+    dry_allowed_length: '',
+    dry_penalty_last_n: '',
     threads: '',
     threads_batch: '',
     batch_size: '',
@@ -300,6 +308,10 @@ function toNumber(value, fallback = '') {
   return Number.isFinite(next) ? next : fallback
 }
 
+function toNumberEmpty(value) {
+  return toNumber(value, '')
+}
+
 function normalizeConfig(values, state = {}) {
   const base = defaultConfig()
   const merged = { ...base, ...state, ...values }
@@ -322,6 +334,15 @@ function normalizeConfig(values, state = {}) {
     top_p: toNumber(merged.top_p, base.top_p),
     min_p: toNumber(merged.min_p, base.min_p),
     presence_penalty: toNumber(merged.presence_penalty, base.presence_penalty),
+    repeat_penalty: toNumberEmpty(merged.repeat_penalty),
+    frequency_penalty: toNumberEmpty(merged.frequency_penalty),
+    repeat_last_n: toNumberEmpty(merged.repeat_last_n),
+    tfs_z: toNumberEmpty(merged.tfs_z),
+    typical_p: toNumberEmpty(merged.typical_p),
+    dry_multiplier: toNumberEmpty(merged.dry_multiplier),
+    dry_base: toNumberEmpty(merged.dry_base),
+    dry_allowed_length: toNumberEmpty(merged.dry_allowed_length),
+    dry_penalty_last_n: toNumberEmpty(merged.dry_penalty_last_n),
     log_verbosity: toNumber(merged.log_verbosity, base.log_verbosity),
     extra_args: String(merged.extra_args || ''),
     show_thinking: merged.show_thinking !== false,
@@ -393,6 +414,20 @@ function buildToml(config) {
   const repeatPenalty = optionalNumberLine('repeat_penalty', config.repeat_penalty)
   if (repeatPenalty) {
     lines.push(repeatPenalty)
+  }
+
+  for (const [key, value] of [
+    ['frequency_penalty', config.frequency_penalty],
+    ['repeat_last_n', config.repeat_last_n],
+    ['tfs_z', config.tfs_z],
+    ['typical_p', config.typical_p],
+    ['dry_multiplier', config.dry_multiplier],
+    ['dry_base', config.dry_base],
+    ['dry_allowed_length', config.dry_allowed_length],
+    ['dry_penalty_last_n', config.dry_penalty_last_n],
+  ]) {
+    const line = optionalNumberLine(key, value)
+    if (line) lines.push(line)
   }
 
   lines.push('', '# 系统设置')
@@ -582,6 +617,14 @@ function buildServerArgs(config) {
   pushArg(args, '--min-p', config.min_p)
   pushArg(args, '--presence-penalty', config.presence_penalty)
   pushArg(args, '--repeat-penalty', config.repeat_penalty)
+  pushArg(args, '--frequency-penalty', config.frequency_penalty)
+  pushArg(args, '--repeat-last-n', config.repeat_last_n)
+  pushArg(args, '--tfs-z', config.tfs_z)
+  pushArg(args, '--typical-p', config.typical_p)
+  pushArg(args, '--dry-multiplier', config.dry_multiplier)
+  pushArg(args, '--dry-base', config.dry_base)
+  pushArg(args, '--dry-allowed-length', config.dry_allowed_length)
+  pushArg(args, '--dry-penalty-last-n', config.dry_penalty_last_n)
   pushArg(args, '--threads', config.threads)
   pushArg(args, '--threads-batch', config.threads_batch)
   pushArg(args, '--batch-size', config.batch_size)

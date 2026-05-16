@@ -1,16 +1,16 @@
 #chat-nav-bar {
   position: fixed;
-  right: 40px;
+  right: 16px;
   top: 40%;
   transform: translateY(-50%);
-  width: 20px;
+  width: 24px;
   max-height: 35vh;
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 9999;
-  transition: width 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease, border-radius 0.28s ease, padding 0.28s ease;
+  transition: width 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-radius 0.3s ease, padding 0.3s ease;
   background: transparent;
-  padding: 8px 4px;
+  padding: 8px 6px;
   scrollbar-width: none;
 }
 
@@ -19,13 +19,13 @@
 }
 
 #chat-nav-bar.expanded {
-  width: 173px;
-  background: rgba(255, 255, 255, 0.92);
+  width: 200px;
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
-  padding: 14px 2px 14px 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 16px 6px 16px 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
   scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-color: #ccc transparent;
 }
 
 #chat-nav-bar.expanded::-webkit-scrollbar {
@@ -34,7 +34,7 @@
 }
 
 #chat-nav-bar.expanded::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
+  background: #ccc;
   border-radius: 2px;
 }
 
@@ -42,10 +42,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 7px 0;
+  padding: 8px 0;
   cursor: pointer;
   overflow: hidden;
-  gap: 10px;
+  gap: 1em;
 }
 
 .nav-text {
@@ -55,11 +55,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: right;
-  color: var(--muted);
-  font-size: 12px;
+  color: #999;
+  font-size: 13px;
   line-height: 1.4;
   opacity: 0;
-  transition: opacity 0.22s, color 0.12s;
+  transition: opacity 0.25s, color 0.15s;
 }
 
 #chat-nav-bar.expanded .nav-text {
@@ -67,38 +67,43 @@
 }
 
 #chat-nav-bar.expanded .nav-item:hover .nav-text {
-  color: var(--ink);
+  color: #111;
 }
 
-.nav-dot {
+.nav-dash {
   flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--line-strong);
-  transition: background 0.12s, transform 0.12s;
+  color: #bbb;
+  font-size: 14px;
+  line-height: 1;
+  transition: color 0.15s;
 }
 
-.nav-item.active .nav-dot {
-  background: var(--green);
-  transform: scale(1.5);
+.nav-item.active .nav-dash {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .nav-item.active .nav-text {
   color: var(--green);
 }
 
+#chat-nav-bar.expanded .nav-item.active:hover .nav-text {
+  color: var(--green);
+  filter: brightness(1.2);
+}
+
 #chat-nav-tooltip {
   position: fixed;
   max-width: 300px;
   padding: 8px 14px;
-  background: var(--surface);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.97);
+  color: #333;
   font-size: 13px;
-  line-height: 1.6;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-lg);
+  line-height: 1.5;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   z-index: 10000;
   pointer-events: none;
   display: none;
@@ -116,7 +121,7 @@
 
 @keyframes nav-flash {
   0%   { filter: brightness(1); }
-  50%  { filter: brightness(1.35); }
+  50%  { filter: brightness(1.45); }
   100% { filter: brightness(1); }
 }
 
@@ -125,20 +130,24 @@
 }
 
 .dark-mode #chat-nav-bar.expanded {
-  background: rgba(45, 45, 48, 0.93);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  background: rgba(40, 42, 48, 0.95);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode #chat-nav-bar.expanded::-webkit-scrollbar-thumb {
-  background: #46464B;
+  background: #555;
 }
 
-.dark-mode .nav-dot {
-  background: #46464B;
+.dark-mode .nav-dash {
+  color: #555;
 }
 
-.dark-mode .nav-item.active .nav-dot {
-  background: var(--green);
+.dark-mode .nav-text {
+  color: #999;
+}
+
+.dark-mode .nav-item.active .nav-dash {
+  color: var(--green);
 }
 
 .dark-mode .nav-item.active .nav-text {
@@ -146,11 +155,16 @@
 }
 
 .dark-mode #chat-nav-bar.expanded .nav-item:hover .nav-text {
-  color: #f0f0f0;
+  color: #fff;
+}
+
+.dark-mode #chat-nav-bar.expanded .nav-item.active:hover .nav-text {
+  color: var(--green);
+  filter: brightness(1.2);
 }
 
 .dark-mode #chat-nav-tooltip {
-  background: #2D2D30;
-  color: #f0f0f0;
-  border-color: #46464B;
+  background: rgba(30, 30, 30, 0.97);
+  color: #ddd;
+  border-color: #444;
 }

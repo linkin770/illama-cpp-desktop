@@ -1,3 +1,5 @@
+import type { ChatMessage, LogEntry } from '../types'
+
 export function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
@@ -163,7 +165,7 @@ export function shortTime(value: string | Date): string {
 }
 
 export function friendlyErrorMessage(error: Error | string): string {
-  const text = String(error?.message || error || '')
+  const text = typeof error === 'string' ? error : String(error?.message || error || '')
   if (text.includes('System message must be at the beginning')) {
     return '发送失败：系统消息必须位于请求最前面。新版会自动整理历史消息，请再发送一次。'
   }
@@ -217,13 +219,6 @@ export function compactStatusMessage(message: string): string {
 }
 
 export function buildApiMessages(messages: ChatMessage[]): ChatMessage[] {
-  interface ChatMessage {
-    role: 'user' | 'assistant' | 'system'
-    content: string
-    attachments?: unknown[]
-    localOnly?: boolean
-  }
-
   const systemMessages: string[] = []
   const conversation: ChatMessage[] = []
 
@@ -243,17 +238,11 @@ export function buildApiMessages(messages: ChatMessage[]): ChatMessage[] {
   }
 
   return systemMessages.length
-    ? [{ role: 'system', content: systemMessages.filter(Boolean).join('\n\n') }, ...conversation]
+    ? [{ role: 'system', content: systemMessages.filter(Boolean).join('\n\n'), createdAt: Date.now() }, ...conversation]
     : conversation
 }
 
 export function visibleLogs(logs: LogEntry[], limit = 420): LogEntry[] {
-  interface LogEntry {
-    at: string
-    source: string
-    line: string
-  }
-
   return logs
     .map(entry => ({ ...entry, line: compactLogLineForDisplay(entry.line) }))
     .filter(entry => entry.line)

@@ -1,4 +1,5 @@
 .service-bar {
+  position: relative;
   border-top: 1px solid var(--line);
   min-height: 72px;
   padding: 12px 32px;
@@ -9,6 +10,7 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   min-width: 0;
+  width: 100%;
 }
 
 .service-left {

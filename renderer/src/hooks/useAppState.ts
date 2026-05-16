@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import type { AppState, Config, ChatMessage, Session } from '../types'
 
 const defaultState: AppState = {
-  active: 'chat',
+  active: 'overview',
   config: null,
   validation: {},
   launch: {},
@@ -203,11 +203,11 @@ export function useAppState() {
     }))
   }, [])
 
-  const updateChatMessage = useCallback((index: number, updates: Partial<ChatMessage>) => {
+  const updateChatMessage = useCallback((index: number, updates: Partial<ChatMessage> | ((prev: ChatMessage) => Partial<ChatMessage>)) => {
     setState(prev => ({
       ...prev,
       chatMessages: prev.chatMessages.map((msg, i) =>
-        i === index ? { ...msg, ...updates } : msg
+        i === index ? { ...msg, ...(typeof updates === 'function' ? updates(msg) : updates) } : msg
       ),
     }))
   }, [])
