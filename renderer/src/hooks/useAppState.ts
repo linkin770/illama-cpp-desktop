@@ -184,6 +184,38 @@ export function useAppState() {
     })
   }, [saveCurrentSession])
 
+  // 重命名会话
+  const renameSession = useCallback((sessionId: string, newTitle: string) => {
+    setState(prev => {
+      const updatedSessions = prev.sessions.map(s =>
+        s.id === sessionId ? { ...s, title: newTitle, updatedAt: Date.now() } : s
+      )
+      persistSessions(updatedSessions)
+      return { ...prev, sessions: updatedSessions }
+    })
+  }, [])
+
+  // 删除会话
+  const deleteSession = useCallback((sessionId: string) => {
+    setState(prev => {
+      const updatedSessions = prev.sessions.filter(s => s.id !== sessionId)
+      persistSessions(updatedSessions)
+      if (prev.currentSessionId === sessionId) {
+        const newId = makeSessionId()
+        return {
+          ...prev,
+          sessions: updatedSessions,
+          currentSessionId: newId,
+          chatMessages: [],
+          chatInput: '',
+          attachments: [],
+          attachmentMenuOpen: false,
+        }
+      }
+      return { ...prev, sessions: updatedSessions }
+    })
+  }, [])
+
   // 更新配置项
   const updateConfig = useCallback((key: keyof Config, value: unknown) => {
     setState(prev => ({
@@ -357,6 +389,8 @@ export function useAppState() {
     saveCurrentSession,
     openSession,
     startFreshSession,
+    renameSession,
+    deleteSession,
     updateConfig,
     updateChatInput,
     addAttachments,

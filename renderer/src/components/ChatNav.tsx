@@ -1,5 +1,5 @@
 // 聊天导航组件 - 快速跳转到用户消息
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useLayoutEffect, useEffect, useRef, useState, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 
 interface ChatNavProps {
@@ -24,30 +24,51 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     .map((msg, i) => ({ msg, i }))
     .filter(({ msg }) => msg.role === 'user' && String(msg.content || '').trim())
 
-  // 更新当前活跃消息 - 根据滚动位置判断哪个消息在视口内
+  // 更新当前活跃消息 - 根据滚动位置与边界处理判断哪个消息在视口内
   const updateCurrentMessage = useCallback(() => {
     const userEls = [...document.querySelectorAll('.message.user')]
     if (!userEls.length) return
 
+    const lastIdx = userEls.length - 1
     const feed = document.getElementById('chatFeed')
-    let target: number
-    if (feed) {
-      const feedRect = feed.getBoundingClientRect()
-      target = feedRect.top + feedRect.height * 0.4
-    } else {
-      target = window.innerHeight * 0.4
-    }
+    const THRESHOLD = 10
 
-    let bestIdx = 0
-    let bestDist = Infinity
-    userEls.forEach((el, i) => {
-      const rect = el.getBoundingClientRect()
-      const dist = Math.abs(rect.top + rect.height / 2 - target)
-      if (dist < bestDist) {
-        bestDist = dist
-        bestIdx = i
+    // 读取滚动容器数据
+    const scrollTop = feed ? feed.scrollTop : window.scrollY
+    const clientHeight = feed ? feed.clientHeight : window.innerHeight
+    const scrollHeight = feed ? feed.scrollHeight : document.body.scrollHeight
+
+    let bestIdx: number
+
+    // 顶部边界：scrollTop <= 阈值 → 第一条
+    if (scrollTop <= THRESHOLD) {
+      bestIdx = 0
+    }
+    // 底部边界：已滚动到最底部附近 → 最后一条
+    else if (scrollTop + clientHeight >= scrollHeight - THRESHOLD) {
+      bestIdx = lastIdx
+    }
+    // 中间区域：用视口 50% 位置计算最近消息
+    else {
+      let target: number
+      if (feed) {
+        const feedRect = feed.getBoundingClientRect()
+        target = feedRect.top + feedRect.height * 0.5
+      } else {
+        target = window.innerHeight * 0.5
       }
-    })
+
+      let bestDist = Infinity
+      bestIdx = 0
+      userEls.forEach((el, i) => {
+        const rect = el.getBoundingClientRect()
+        const dist = Math.abs(rect.top + rect.height / 2 - target)
+        if (dist < bestDist) {
+          bestDist = dist
+          bestIdx = i
+        }
+      })
+    }
 
     if (bestIdx !== activeIdxRef.current) {
       activeIdxRef.current = bestIdx
@@ -65,7 +86,29 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }
   }, [])
 
-  // 监听滚动事件
+  // 当用户消息数量变化时，始终聚焦到最后一条
+  useLayoutEffect(() => {
+    const lastUserIdx = userMessages.length - 1
+    if (lastUserIdx >= 0) {
+      activeIdxRef.current = lastUserIdx
+      setActiveIdx(lastUserIdx)
+    }
+  }, [userMessages.length])
+
+  // activeIdx 变化后进行导航滚动
+  useEffect(() => {
+    if (activeIdx < 0) return
+    const navBar = document.getElementById('chat-nav-bar')
+    const activeItem = navBar?.querySelector('.nav-item.active') as HTMLElement
+    if (navBar && activeItem) {
+      const navRect = navBar.getBoundingClientRect()
+      const itemRect = activeItem.getBoundingClientRect()
+      const targetScroll = navBar.scrollTop + itemRect.top - navRect.top - navRect.height / 2 + itemRect.height / 2
+      navBar.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' })
+    }
+  }, [activeIdx])
+
+  // 监听聊天区滚动，更新当前视口活跃消息
   useEffect(() => {
     const onScroll = () => {
       if (!scrollThrottleRef.current) {
@@ -76,31 +119,10 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       }
     }
 
-    // 监听 #chatFeed 元素的滚动事件
     const feed = document.getElementById('chatFeed')
     if (feed) {
       feed.addEventListener('scroll', onScroll, { passive: true })
     }
-
-    // 初始时设置最后一条消息为活跃
-    const lastUserIdx = userMessages.length - 1
-    if (lastUserIdx >= 0) {
-      activeIdxRef.current = lastUserIdx
-      setActiveIdx(lastUserIdx)
-    }
-
-    // 延迟执行一次更新
-    setTimeout(() => {
-      updateCurrentMessage()
-      const navBar = document.getElementById('chat-nav-bar')
-      const activeItem = navBar?.querySelector('.nav-item.active') as HTMLElement
-      if (navBar && activeItem) {
-        const navRect = navBar.getBoundingClientRect()
-        const itemRect = activeItem.getBoundingClientRect()
-        const targetScroll = navBar.scrollTop + itemRect.top - navRect.top - navRect.height / 2 + itemRect.height / 2
-        navBar.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' })
-      }
-    }, 300)
 
     return () => {
       if (feed) {
@@ -108,12 +130,12 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
       }
       if (scrollThrottleRef.current) clearTimeout(scrollThrottleRef.current)
     }
-  }, [chatMessages, userMessages.length, updateCurrentMessage])
+  }, [updateCurrentMessage])
 
   // 更新导航条位置 - 跟随输入框右侧
   useEffect(() => {
     const updateNavPosition = () => {
-      const composer = document.querySelector('.composer') as HTMLElement
+      const composer = document.querySelector('.composer-wrap') as HTMLElement
       if (composer) {
         const composerRect = composer.getBoundingClientRect()
         const rightSpace = window.innerWidth - composerRect.right
@@ -177,7 +199,7 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     }
 
     // 高亮目标消息
-    const bubble = el.querySelector('.bubble') || el
+    const bubble = el.querySelector('.ant-bubble-content') || el
     bubble.classList.remove('nav-flash')
     void (bubble as HTMLElement).offsetWidth
     bubble.classList.add('nav-flash')

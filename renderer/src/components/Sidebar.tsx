@@ -1,4 +1,6 @@
-import React, { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
+import { Conversations } from '@ant-design/x'
+import type { MenuProps } from 'antd'
 import type { Session, Status } from '../types'
 import { escapeHtml, statusLabel, statusClass, shortTime } from '../utils'
 
@@ -58,128 +60,143 @@ export function Sidebar({
 
   useEffect(() => {
     if (!historyListRef.current) return
-    const activeEl = historyListRef.current.querySelector('.history-row.active')
+    const activeEl = historyListRef.current.querySelector('.ant-conversations-item-active')
     if (activeEl) {
       activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
   }, [currentSessionId])
 
+  const conversationItems = useMemo(() => {
+    return filteredSessions.map(session => ({
+      key: session.id,
+      label: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {escapeHtml(session.title || '新聊天')}
+          </span>
+          <span style={{ fontSize: 11, opacity: 0.6 }}>
+            {escapeHtml(shortTime(new Date(session.updatedAt)))}
+          </span>
+        </div>
+      ),
+      icon: (
+        <span style={{ fontSize: 14, opacity: 0.7 }}>{'💬'}</span>
+      ),
+    }))
+  }, [filteredSessions])
+
+  const getMenuItems = (sessionId: string): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: '编辑',
+      icon: <span>{'✎'}</span>,
+      onClick: () => onEditSession(sessionId),
+    },
+    {
+      key: 'export',
+      label: '导出',
+      icon: <span>{'⬇'}</span>,
+      onClick: () => onExportSession(sessionId),
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      icon: <span>{'🗑'}</span>,
+      danger: true,
+      onClick: () => onDeleteSession(sessionId),
+    },
+  ]
+
   return (
     <aside className="sidebar">
-        <div className="brand-row">
-          <div className="app-mark">Ai</div>
-          <div className="brand-copy">
-            <strong>AI本地部署工具</strong>
-          </div>
+      <div className="brand-row">
+        <div className="app-mark">Ai</div>
+        <div className="brand-copy">
+          <strong>AI本地部署工具</strong>
         </div>
+      </div>
 
+      <button
+        type="button"
+        className={`side-action ${view === 'chat' && chatMessages.length === 0 ? 'active' : ''}`}
+        data-action="new-chat"
+        onClick={onNewChat}
+      >
+        新聊天
+      </button>
+      <button
+        type="button"
+        className={`side-action ${view === 'chat' ? 'active' : ''}`}
+        data-action="focus-chat"
+        onClick={onFocusChat}
+      >
+        搜索对话
+      </button>
+      <button
+        type="button"
+        className={`side-action ${view === 'terminal' ? 'active' : ''}`}
+        data-action="show-terminal"
+        onClick={onShowTerminal}
+      >
+        终端日志
+      </button>
+
+      <input
+        className="history-search"
+        data-history-search
+        placeholder="搜索历史对话..."
+        value={historySearch}
+        onChange={(e) => onSearchChange(e.target.value)}
+      />
+
+      <div className="side-section-label">历史对话</div>
+      <div className="history-list" ref={historyListRef}>
+        {filteredSessions.length > 0 ? (
+          <Conversations
+            activeKey={currentSessionId}
+            onActiveChange={(key) => onOpenSession(String(key))}
+            items={conversationItems}
+            menu={(item) => ({
+              items: getMenuItems(String(item.key)),
+            })}
+            styles={{
+              item: { padding: '8px 12px' },
+            }}
+          />
+        ) : (
+          <div className="terminal-empty">还没有历史对话。发出第一条消息后会自动保存。</div>
+        )}
+      </div>
+
+      <div className="side-bottom">
         <button
           type="button"
-          className={`side-action ${view === 'chat' && chatMessages.length === 0 ? 'active' : ''}`}
-          data-action="new-chat"
-          onClick={onNewChat}
+          className="theme-toggle-btn"
+          data-action="toggle-theme"
+          title={darkMode ? '切换到浅色模式' : '切换到深色模式'}
+          onClick={onToggleTheme}
         >
-          新聊天
+          <span>{darkMode ? '☀' : '☽'}</span>
+          <span>{darkMode ? '浅色模式' : '深色模式'}</span>
         </button>
         <button
           type="button"
-          className={`side-action ${view === 'chat' ? 'active' : ''}`}
-          data-action="focus-chat"
-          onClick={onFocusChat}
+          className={`settings-btn ${settingsOpen ? 'active' : ''}`}
+          data-action="toggle-settings"
+          title="打开设置"
+          onClick={onToggleSettings}
         >
-          搜索对话
+          <span>{'⚙'}</span>
+          <span>设置</span>
         </button>
-        <button
-          type="button"
-          className={`side-action ${view === 'terminal' ? 'active' : ''}`}
-          data-action="show-terminal"
-          onClick={onShowTerminal}
-        >
-          终端日志
+        <button type="button" className="status-card">
+          <span className={`status-dot ${statusClass(status.state)}`}></span>
+          <span>
+            <strong>{statusLabel(status.state)}</strong>
+            <em>{escapeHtml(status.url || '')}</em>
+          </span>
         </button>
-
-        <input
-          className="history-search"
-          data-history-search
-          placeholder="搜索历史对话..."
-          value={historySearch}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-
-        <div className="side-section-label">历史对话</div>
-        <div className="history-list" ref={historyListRef}>
-          {filteredSessions.length > 0 ? (
-            filteredSessions.map(session => (
-              <div key={session.id} className={`history-row ${session.id === currentSessionId ? 'active' : ''}`}>
-                <button
-                  type="button"
-                  className="history-item"
-                  data-session={escapeHtml(session.id)}
-                  title={escapeHtml(session.title || '')}
-                  onClick={() => onOpenSession(session.id)}
-                >
-                  <strong>{escapeHtml(session.title || '新聊天')}</strong>
-                  <span>{escapeHtml(shortTime(new Date(session.updatedAt)))}</span>
-                </button>
-                <button
-                  type="button"
-                  className="history-more"
-                  data-action="toggle-history-menu"
-                  data-session-id={escapeHtml(session.id)}
-                  title="More"
-                  onClick={() => onToggleHistoryMenu(session.id)}
-                >
-                  ...
-                </button>
-                {historyMenuId === session.id && (
-                  <div className="history-menu">
-                    <button type="button" data-action="history-edit" onClick={() => onEditSession(session.id)}>
-                      <span className="history-menu-icon">&#9998;</span>Edit
-                    </button>
-                    <button type="button" data-action="history-export" onClick={() => onExportSession(session.id)}>
-                      <span className="history-menu-icon">&#8681;</span>Export
-                    </button>
-                    <button type="button" className="danger" data-action="history-delete" onClick={() => onDeleteSession(session.id)}>
-                      <span className="history-menu-icon">&#128465;</span>Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="terminal-empty">还没有历史对话。发出第一条消息后会自动保存。</div>
-          )}
-        </div>
-
-        <div className="side-bottom">
-          <button
-            type="button"
-            className="theme-toggle-btn"
-            data-action="toggle-theme"
-            title={darkMode ? '切换到浅色模式' : '切换到深色模式'}
-            onClick={onToggleTheme}
-          >
-            <span>{darkMode ? '☀' : '☽'}</span>
-            <span>{darkMode ? '浅色模式' : '深色模式'}</span>
-          </button>
-          <button
-            type="button"
-            className={`settings-btn ${settingsOpen ? 'active' : ''}`}
-            data-action="toggle-settings"
-            title="打开设置"
-            onClick={onToggleSettings}
-          >
-            <span>⚙</span>
-            <span>设置</span>
-          </button>
-          <button type="button" className="status-card">
-            <span className={`status-dot ${statusClass(status.state)}`}></span>
-            <span>
-              <strong>{statusLabel(status.state)}</strong>
-              <em>{escapeHtml(status.url || '')}</em>
-            </span>
-          </button>
-        </div>
+      </div>
     </aside>
   )
 }

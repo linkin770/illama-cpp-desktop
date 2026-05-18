@@ -1,18 +1,16 @@
-// Ant Design X 主题配置
 import type { ThemeConfig } from 'antd';
 
-// 创建主题配置
 export const themeConfig: ThemeConfig = {
   token: {
-    colorPrimary: '#1890ff',
+    colorPrimary: '#16a34a',
     colorSuccess: '#52c41a',
     colorWarning: '#faad14',
     colorError: '#f5222d',
     colorBgBase: '#ffffff',
-    colorTextBase: '#1f1f1f',
-    colorBgLayout: '#f0f2f5',
+    colorTextBase: '#1a1a1a',
+    colorBgLayout: '#faf8f5',
     borderRadius: 8,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   components: {
     Button: {
@@ -24,18 +22,17 @@ export const themeConfig: ThemeConfig = {
   },
 };
 
-// 创建深色主题配置
 export const darkThemeConfig: ThemeConfig = {
   token: {
-    colorPrimary: '#1890ff',
+    colorPrimary: '#4ade80',
     colorSuccess: '#52c41a',
     colorWarning: '#faad14',
-    colorError: '#f5222d',
-    colorBgBase: '#1a1a1a',
+    colorError: '#f87171',
+    colorBgBase: '#1E1E1E',
     colorTextBase: '#f0f0f0',
-    colorBgLayout: '#141414',
+    colorBgLayout: '#1E1E1E',
     borderRadius: 8,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   components: {
     Button: {
@@ -45,4 +42,5 @@ export const darkThemeConfig: ThemeConfig = {
       borderRadius: 6,
     },
   },
+  algorithm: undefined,
 };

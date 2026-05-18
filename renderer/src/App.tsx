@@ -1,5 +1,8 @@
 // 主应用组件 - 整合所有功能模块
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
+import { XProvider } from '@ant-design/x';
+import zhCN from '@ant-design/x/locale/zh_CN';
+import { theme as antdTheme, Modal, Input } from 'antd';
 import { useAppState } from './hooks/useAppState';
 import { ChatScreen } from './components/ChatScreen';
 import { Sidebar } from './components/Sidebar';
@@ -11,9 +14,9 @@ import { Toast } from './components/Toast';
 import { ChatNav } from './components/ChatNav';
 import type { ChatMessage } from './types';
 import { friendlyErrorMessage, estimateTokens } from './utils';
+import { themeConfig, darkThemeConfig } from './theme';
 
 function App() {
-  // 从应用状态 Hook 中解构需要的状态和方法
   const {
     state,
     setToast,
@@ -21,6 +24,8 @@ function App() {
     saveCurrentSession,
     openSession,
     startFreshSession,
+    renameSession,
+    deleteSession,
     updateConfig,
     updateChatInput,
     addAttachments,
@@ -42,6 +47,13 @@ function App() {
     setModelInfoOpen,
     setBusy,
   } = useAppState();
+
+  const [renameState, setRenameState] = useState<{ open: boolean; sessionId: string; title: string; value: string } | null>(null)
+
+  const currentTheme = useMemo(() => ({
+    ...(state.darkMode ? darkThemeConfig : themeConfig),
+    algorithm: state.darkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  }), [state.darkMode]);
 
   // 使用 useRef 保存最新的流式请求 ID 和消息列表，避免闭包陷阱
   const streamRequestIdRef = useRef(state.streamRequestId);
@@ -171,8 +183,8 @@ function App() {
   }, [addAttachments, state.config?.mmproj, setToast]);
 
   // 发送聊天消息
-  const sendChat = useCallback(async () => {
-    const content = state.chatInput.trim();
+  const sendChat = useCallback(async (inputContent: string) => {
+    const content = inputContent.trim();
     // 如果没有内容和附件，或者正在忙碌，则直接返回
     if ((!content && state.attachments.length === 0) || state.chatBusy)
       return;
@@ -241,7 +253,7 @@ function App() {
       setChatBusy(false);
       setStreamRequestId('');
     }
-  }, [state.chatInput, state.attachments, state.chatBusy, state.config, state.chatMessages, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
+  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
 
   // 中止当前聊天
   const abortChat = useCallback(async () => {
@@ -387,12 +399,61 @@ function App() {
     }
   }, [updateConfig]);
 
-  // 删除会话
-  const deleteSession = useCallback((sessionId: string) => {
-    setChatMessages([]);
-    const updatedSessions = state.sessions.filter(s => s.id !== sessionId);
-    localStorage.setItem('llama.cpp.desktop.sessions', JSON.stringify(updatedSessions));
-  }, [state.sessions, setChatMessages]);
+  // 重命名会话（使用 antd Modal 代替 window.prompt）
+  const editSession = useCallback((sessionId: string) => {
+    const session = state.sessions.find(s => s.id === sessionId)
+    if (!session) return
+    const title = session.title || '新聊天'
+    setRenameState({ open: true, sessionId, title, value: title })
+  }, [state.sessions])
+
+  const handleRenameOk = useCallback(() => {
+    if (!renameState) return
+    const trimmed = renameState.value.trim()
+    if (trimmed && trimmed !== renameState.title) {
+      renameSession(renameState.sessionId, trimmed)
+    }
+    setRenameState(null)
+  }, [renameState, renameSession])
+
+  // 导出会话为 TXT（用户：xxx \n AI：xxx 格式）
+  const exportSession = useCallback((sessionId: string) => {
+    const session = state.sessions.find(s => s.id === sessionId)
+    if (!session) return
+    const lines: string[] = []
+    for (const msg of session.messages) {
+      if (msg.role === 'user') {
+        lines.push(`用户：${msg.content}`)
+      } else if (msg.role === 'assistant') {
+        lines.push(`AI：${msg.content}`)
+      }
+    }
+    const content = lines.join('\n\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${session.title || '聊天记录'}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [state.sessions])
+
+  // 删除会话（使用 antd Modal.confirm 代替 window.confirm）
+  const removeSession = useCallback((sessionId: string) => {
+    const session = state.sessions.find(s => s.id === sessionId)
+    if (!session) return
+    Modal.confirm({
+      title: '确认删除',
+      centered: true,
+      content: `确定要删除会话「${session.title || '新聊天'}」吗？此操作不可撤销。`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: () => { deleteSession(sessionId) },
+    })
+  }, [state.sessions, deleteSession])
 
   // 初始化应用，从后端获取状态
   useEffect(() => {
@@ -479,37 +540,52 @@ function App() {
   }, [patchFromBackend, updateChatMessage, setStreamRequestId, saveCurrentSession]);
 
   // 渲染应用界面
-  return (<>
-    {/* 拖拽区域（窗口控制） */}
+  return (
+    <XProvider
+      locale={zhCN}
+      theme={currentTheme}
+    >
     <div className="drag-region">
       <button type="button" className="sidebar-toggle" data-action="toggle-sidebar" title={state.sidebarCollapsed ? '显示侧边栏' : '隐藏侧边栏'} onClick={() => setSidebarCollapsed(!state.sidebarCollapsed)}>
         {state.sidebarCollapsed ? '›' : '‹'}
       </button>
     </div>
     <div className={`app-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      {/* 侧边栏 */}
-      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} darkMode={state.darkMode} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={() => { }} onExportSession={() => { }} onDeleteSession={deleteSession} onToggleTheme={() => setDarkMode(!state.darkMode)} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
+      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} darkMode={state.darkMode} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleTheme={() => setDarkMode(!state.darkMode)} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
 
-      {/* 主区域 */}
       <main className="main-area">
-        {/* 根据视图显示聊天界面或终端 */}
         {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage}/>)}
-        {/* 服务栏 */}
         <ServiceBar status={state.status} busy={state.busy} dirty={state.dirty} onSave={save} onHealth={health} onStart={start} onStop={stop}/>
       </main>
 
-      {/* 设置面板 */}
       <SettingsPanel settingsOpen={state.settingsOpen} active={state.active} config={state.config} validation={state.validation} status={state.status} logs={state.logs} dirty={state.dirty} launch={state.launch} onClose={() => setSettingsOpen(false)} onSelectSection={setActive} onUpdateConfig={updateConfig} onPickFile={pickFile} onCopyLaunchCommand={() => { const preview = (state.launch as Record<string, string>).preview; if (preview) { navigator.clipboard.writeText(preview); setToast('命令已复制'); } }}/>
 
-      {/* 模型信息弹窗 */}
       <ModelInfoModal modelInfoOpen={state.modelInfoOpen} modelInfo={state.modelInfo} onClose={() => setModelInfoOpen(false)}/>
 
-      {/* Toast 提示 */}
       <Toast message={state.toast}/>
-      {/* 聊天导航（仅在聊天视图显示） */}
+      {renameState?.open && (
+        <Modal
+          open={renameState.open}
+          title="重命名会话"
+          centered
+          okText="确定"
+          cancelText="取消"
+          onOk={handleRenameOk}
+          onCancel={() => setRenameState(null)}
+          destroyOnClose
+        >
+          <Input
+            value={renameState.value}
+            onChange={(e) => setRenameState(prev => prev ? { ...prev, value: e.target.value } : prev)}
+            onPressEnter={handleRenameOk}
+            autoFocus
+          />
+        </Modal>
+      )}
       {state.view === 'chat' && <ChatNav chatMessages={state.chatMessages} />}
     </div>
-  </>);
+    </XProvider>
+  );
 }
 
 export default App;

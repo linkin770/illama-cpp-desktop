@@ -135,3 +135,15 @@
   margin-top: 10px;
   letter-spacing: 0.3px;
 }
+
+.composer-wrap .ant-sender-footer {
+  padding-inline: 0;
+}
+
+.ant-sender-actions-btn-loading-button.ant-btn {
+  color: #ff4d4f !important;
+}
+
+.ant-sender-actions-btn-loading-button.ant-btn:hover {
+  color: #ff7875 !important;
+}

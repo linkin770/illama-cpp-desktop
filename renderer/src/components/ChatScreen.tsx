@@ -1,7 +1,13 @@
 // 聊天屏幕组件 - 展示消息列表和输入区域
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import type { ChatMessage, Attachment } from '../types'
-import { ChatMessage as ChatMessageComponent } from './ChatMessage'
+import { Bubble } from '@ant-design/x'
+import {
+  renderMessageContent,
+  renderMessageMeta,
+  renderMessageAvatar,
+  renderMessageActions,
+} from './ChatMessage'
 import { ChatInput } from './ChatInput'
 
 interface ChatScreenProps {
@@ -11,7 +17,7 @@ interface ChatScreenProps {
   chatBusy: boolean
   config: Record<string, unknown> | null
   onInputChange: (value: string) => void
-  onSend: () => void
+  onSend: (content: string) => void
   onAbort: () => void
   onPickAttachment: (kind: string) => void
   onRemoveAttachment: (index: number) => void
@@ -173,15 +179,20 @@ export function ChatScreen({
       <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
         {/* 渲染所有消息 */}
         {chatMessages.map((message, index) => (
-          <ChatMessageComponent
+          <Bubble
             key={index}
-            message={message}
-            index={index}
-            chatBusy={chatBusy}
-            onCopy={onCopyMessage}
-            onEdit={onEditMessage}
-            onRetry={onRetryMessage}
-            onDelete={onDeleteMessage}
+            className={`message ${message.role}`}
+            data-message-index={index}
+            placement={message.role === 'user' ? 'end' : 'start'}
+            avatar={renderMessageAvatar(message.role)}
+            content={renderMessageContent(message, chatBusy, index, onCopyMessage)}
+            styles={{ footer: { marginTop: -8 } }}
+            footer={
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: message.role === 'user' ? 'flex-end' : 'flex-start', width: '100%' }}>
+                {renderMessageMeta(message)}
+                {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage)}
+              </div>
+            }
           />
         ))}
       </div>
