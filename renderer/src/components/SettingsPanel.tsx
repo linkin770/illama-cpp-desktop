@@ -1,5 +1,6 @@
 // 设置面板组件 - 配置 llama 服务
 import React from 'react'
+import { SettingOutlined, DesktopOutlined, SlidersOutlined, ApiOutlined, CodeOutlined, FileTextOutlined } from '@ant-design/icons'
 import type { Config, Validation, LogEntry } from '../types'
 import { escapeHtml, visibleLogs, statusLabel, statusClass } from '../utils'
 
@@ -21,12 +22,12 @@ interface SettingsPanelProps {
 
 // 设置标签页定义
 const settingsTabs = [
-  { id: 'overview', icon: '⚙', label: '概览', hint: '服务入口与基础运行信息' },
-  { id: 'display', icon: '🖥', label: '展示', hint: '模型标签、模板与显示项' },
-  { id: 'sampling', icon: '▽', label: '采样与惩罚', hint: '温度、Top-K/P、重复与 DRY' },
-  { id: 'mcp', icon: '🔗', label: 'MCP', hint: '预留扩展和工具接入' },
-  { id: 'developer', icon: '</>', label: '开发者', hint: '线程、GPU 与批处理' },
-  { id: 'logs', icon: '📄', label: '日志', hint: '当前 llama.cpp 服务输出' },
+  { id: 'overview', icon: <SettingOutlined />, label: '概览', hint: '服务入口与基础运行信息' },
+  { id: 'display', icon: <DesktopOutlined />, label: '展示', hint: '模型标签、模板与显示项' },
+  { id: 'sampling', icon: <SlidersOutlined />, label: '采样与惩罚', hint: '温度、Top-K/P、重复与 DRY' },
+  { id: 'mcp', icon: <ApiOutlined />, label: 'MCP', hint: '预留扩展和工具接入' },
+  { id: 'developer', icon: <CodeOutlined />, label: '开发者', hint: '线程、GPU 与批处理' },
+  { id: 'logs', icon: <FileTextOutlined />, label: '日志', hint: '当前 llama.cpp 服务输出' },
 ]
 
 export function SettingsPanel({
@@ -352,7 +353,7 @@ export function SettingsPanel({
       <div className={`settings-backdrop ${settingsOpen ? 'show' : ''}`} onClick={onClose}></div>
       <aside className={`settings-panel ${settingsOpen ? 'show' : ''}`}>
         <div className="settings-rail">
-          <div className="settings-badge">⚙ 设置</div>
+          <div className="settings-badge"><SettingOutlined /> 设置</div>
           <nav className="settings-rail-tabs">
             {settingsTabs.map(tab => (
               <button
@@ -361,7 +362,7 @@ export function SettingsPanel({
                 className={currentTab.id === tab.id ? 'active' : ''}
                 onClick={() => onSelectSection(tab.id)}
               >
-                <span className="settings-tab-icon"><span>{tab.icon}</span></span>
+                <span className="settings-tab-icon">{tab.icon}</span>
                 <span className="settings-tab-copy">
                   <strong>{tab.label}</strong>
                   <span>{tab.hint}</span>

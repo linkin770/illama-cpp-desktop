@@ -130,6 +130,17 @@ export interface ChatMessage {
   speed?: string // 生成速度
   streaming?: boolean // 是否正在流式生成
   localOnly?: boolean // 是否仅本地消息
+  variants?: ChatMessageVariant[] // 回复变体列表
+  currentVariantIndex?: number // 当前选中的变体索引
+}
+
+// 消息变体类型
+export interface ChatMessageVariant {
+  content: string // 变体内容
+  tokens?: string | number // token 数
+  latencyMs?: number // 延迟
+  speed?: string // 生成速度
+  createdAt: number // 创建时间戳
 }
 
 // 会话类型 - 存储一组聊天记录

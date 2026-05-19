@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
+import { CopyOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CodeOutlined, TagOutlined, ClockCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { XMarkdown } from '@ant-design/x-markdown'
+import { CodeHighlighter } from '@ant-design/x'
 import type { ChatMessage as ChatMessageType } from '../types'
-import { escapeHtml, splitCodeParts, splitThinkingOutput, canPreviewCode, estimateTokens } from '../utils'
+import { escapeHtml, estimateTokens } from '../utils'
 
 export function renderMessageContent(
   message: ChatMessageType,
   chatBusy: boolean,
-  messageIndex: number,
-  onCopy: (index: number) => void,
 ): ReactNode {
   const content = String(message.content || '')
 
@@ -18,62 +20,30 @@ export function renderMessageContent(
     return content ? <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span> : null
   }
 
-  if (message.streaming) {
-    return <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span>
-  }
-
-  const counter = { value: 0 }
-  const { answer, thoughts } = splitThinkingOutput(content)
-  const output: ReactNode[] = []
-
-  if (thoughts.length > 0) {
-    output.push(
-      <details key="thoughts" className="think-block">
-        <summary>思考过程</summary>
-        {renderCodeAwareParts(thoughts.join('\n\n'), counter, messageIndex, onCopy)}
-      </details>,
-    )
-  }
-
-  if (answer) {
-    output.push(<div key="answer">{renderCodeAwareParts(answer, counter, messageIndex, onCopy)}</div>)
-  }
-
-  return output.length > 0 ? <>{output}</> : <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span>
-}
-
-function renderCodeAwareParts(
-  text: string,
-  counter: { value: number },
-  messageIndex: number,
-  onCopy: (index: number) => void,
-): ReactNode[] {
-  return splitCodeParts(String(text || '')).map((part, idx) => {
-    if (part.type === 'text') {
-      return <span key={idx} style={{ whiteSpace: 'pre-wrap' }}>{part.value}</span>
-    }
-
-    const codeIndex = counter.value
-    counter.value += 1
-    const language = part.language || 'text'
-    const previewable = canPreviewCode(language, part.value)
-    const codeValue = String(part.value || '').replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/, '')
-
-    return (
-      <figure key={idx} className="code-block" data-code-index={codeIndex}>
-        <figcaption>
-          <span>{escapeHtml(language.toUpperCase())}</span>
-          <div className="actions">
-            <button type="button" onClick={() => onCopy(messageIndex)}>复制</button>
-            {previewable && (
-              <button type="button" className="eye-btn">&#128065;</button>
-            )}
-          </div>
-        </figcaption>
-        <pre><code>{codeValue}</code></pre>
-      </figure>
-    )
-  })
+  return (
+    <XMarkdown
+      className="x-markdown-light"
+      components={{
+        code: ({ lang, block, children, className, ...props }) => {
+          if (block) {
+            return (
+              <CodeHighlighter lang={lang}>
+                {typeof children === 'string' ? children : ''}
+              </CodeHighlighter>
+            )
+          }
+          
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          )
+        }
+      }}
+    >
+      {content}
+    </XMarkdown>
+  )
 }
 
 export function renderMessageMeta(message: ChatMessageType): ReactNode {
@@ -85,10 +55,24 @@ export function renderMessageMeta(message: ChatMessageType): ReactNode {
 
   return (
     <div className="message-meta">
-      <span className="model-pill">{`☯ ${escapeHtml(message.model || 'local-model')}`}</span>
-      <span>{`⛶ ${String(tokens || 0)} Tokens`}</span>
-      <span>{`⏲ ${(latencyMs / 1000).toFixed(1)}s`}</span>
-      {speed && <span>{`⏻ ${escapeHtml(speed)}`}</span>}
+      <span className="model-pill">
+        <CodeOutlined style={{ fontSize: 12, marginRight: 4 }} />
+        {escapeHtml(message.model || 'local-model')}
+      </span>
+      <span>
+        <TagOutlined style={{ fontSize: 12, marginRight: 4 }} />
+        {String(tokens || 0)} Tokens
+      </span>
+      <span>
+        <ClockCircleOutlined style={{ fontSize: 12, marginRight: 4 }} />
+        {(latencyMs / 1000).toFixed(1)}s
+      </span>
+      {speed && (
+        <span>
+          <PlayCircleOutlined style={{ fontSize: 12, marginRight: 4 }} />
+          {escapeHtml(speed)}
+        </span>
+      )}
       {message.streaming && <span>生成中</span>}
     </div>
   )
@@ -110,17 +94,57 @@ export function renderMessageActions(
   onEdit: (index: number) => void,
   onRetry: (index: number) => void,
   onDelete: (index: number) => void,
+  onPrevVariant: (index: number) => void,
+  onNextVariant: (index: number) => void,
 ): ReactNode {
   const canRetry = message.role === 'assistant'
+  const hasVariants = message.role === 'assistant' && message.variants && message.variants.length >= 1
+  const currentVariantIndex = message.currentVariantIndex ?? message.variants?.length ?? 0
+  const totalVariants = message.variants ? message.variants.length + 1 : 1
 
   return (
     <div className="message-actions">
-      <button type="button" onClick={() => onCopy(index)} title="复制">⧉</button>
-      <button type="button" onClick={() => onEdit(index)} title="编辑">✎</button>
-      {canRetry && (
-        <button type="button" onClick={() => onRetry(index)} title="重新生成">⟳</button>
+      {hasVariants && (
+        <div className="variant-switcher">
+          <button
+            type="button"
+            onClick={() => onPrevVariant(index)}
+            disabled={currentVariantIndex === 0}
+            title="上一个回复"
+            className="variant-btn prev"
+          >
+            ◀
+          </button>
+          <span className="variant-counter">
+            {currentVariantIndex + 1} / {totalVariants}
+          </span>
+          <button
+            type="button"
+            onClick={() => onNextVariant(index)}
+            disabled={currentVariantIndex >= totalVariants - 1}
+            title="下一个回复"
+            className="variant-btn next"
+          >
+            ▶
+          </button>
+        </div>
       )}
-      <button type="button" onClick={() => onDelete(index)} title="删除">✖</button>
+      <button type="button" onClick={() => onCopy(index)} title="复制">
+        <CopyOutlined />
+      </button>
+      {message.role === 'user' && (
+        <button type="button" onClick={() => onEdit(index)} title="编辑">
+          <EditOutlined />
+        </button>
+      )}
+      {canRetry && (
+        <button type="button" onClick={() => onRetry(index)} title="重新生成">
+          <ReloadOutlined />
+        </button>
+      )}
+      <button type="button" onClick={() => onDelete(index)} title="删除" className="delete-btn">
+        <DeleteOutlined />
+      </button>
     </div>
   )
 }

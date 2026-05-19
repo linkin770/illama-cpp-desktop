@@ -268,7 +268,7 @@ function App() {
     setStreamRequestId('');
   }, [state.chatBusy, setChatBusy, setStreamRequestId]);
 
-  // 重试特定消息
+  // 重试特定消息（保存当前变体后生成新回复）
   const retryMessage = useCallback(async (index: number) => {
     if (state.chatBusy)
       return;
@@ -283,7 +283,34 @@ function App() {
       return;
     }
     const userMessage = state.chatMessages[previousUserIndex];
+    const currentAssistantMessage = state.chatMessages[index];
+    
+    // 保存当前回复作为变体（如果有内容）
     const truncatedMessages = state.chatMessages.slice(0, index);
+    let existingVariants = currentAssistantMessage?.variants || [];
+    
+    if (currentAssistantMessage && currentAssistantMessage.content) {
+      // 如果已有变体，把当前显示的内容添加到变体列表
+      if (existingVariants.length > 0) {
+        existingVariants = [...existingVariants, {
+          content: currentAssistantMessage.content,
+          tokens: currentAssistantMessage.tokens,
+          latencyMs: currentAssistantMessage.latencyMs,
+          speed: currentAssistantMessage.speed,
+          createdAt: currentAssistantMessage.createdAt,
+        }];
+      } else {
+        // 如果是第一次重试，把原始回复保存为第一个变体
+        existingVariants = [{
+          content: currentAssistantMessage.content,
+          tokens: currentAssistantMessage.tokens,
+          latencyMs: currentAssistantMessage.latencyMs,
+          speed: currentAssistantMessage.speed,
+          createdAt: currentAssistantMessage.createdAt,
+        }];
+      }
+    }
+    
     const requestId = `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     // 创建新的助手消息
     const assistantMessage: ChatMessage = {
@@ -297,6 +324,8 @@ function App() {
       latencyMs: 0,
       speed: '',
       streaming: true,
+      variants: existingVariants,
+      currentVariantIndex: existingVariants.length,
     };
     const allMessages = [...truncatedMessages, assistantMessage];
     setChatMessages(truncatedMessages);
@@ -322,14 +351,18 @@ function App() {
         : '';
       const lastIndex = allMessages.length;
       const estimatedTokens = estimateTokens(result.content || '');
+      const newContent = result.content || allMessages[lastIndex - 1]?.content || `基于"${userMessage.content}"重试后，模型返回了空内容。`;
+      
       // 更新助手消息的内容和元数据
       updateChatMessage(lastIndex - 1, {
-        content: result.content || allMessages[lastIndex - 1]?.content || `基于"${userMessage.content}"重试后，模型返回了空内容。`,
+        content: newContent,
         tokens: displayTokens || estimatedTokens,
         estimatedTokens,
         latencyMs,
         speed: speed || (displayTokens ? `${(Number(displayTokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''),
         streaming: false,
+        variants: existingVariants,
+        currentVariantIndex: existingVariants.length,
       });
       saveCurrentSession();
     }
@@ -352,6 +385,49 @@ function App() {
       setStreamRequestId('');
     }
   }, [state.chatBusy, state.chatMessages, state.config, setChatMessages, addChatMessage, setStreamRequestId, setChatBusy, updateChatMessage, saveCurrentSession, setToast]);
+
+  // 切换到上一个变体
+  const prevVariant = useCallback((index: number) => {
+    const message = state.chatMessages[index];
+    if (!message || message.role !== 'assistant' || !message.variants || message.variants.length === 0) {
+      return;
+    }
+    const currentIndex = message.currentVariantIndex ?? message.variants.length;
+    if (currentIndex <= 0) return;
+    
+    const newIndex = currentIndex - 1;
+    const variant = message.variants[newIndex];
+    
+    updateChatMessage(index, {
+      content: variant?.content || message.content,
+      tokens: variant?.tokens || message.tokens,
+      latencyMs: variant?.latencyMs || message.latencyMs,
+      speed: variant?.speed || message.speed,
+      currentVariantIndex: newIndex,
+    });
+  }, [state.chatMessages, updateChatMessage]);
+
+  // 切换到下一个变体
+  const nextVariant = useCallback((index: number) => {
+    const message = state.chatMessages[index];
+    if (!message || message.role !== 'assistant' || !message.variants || message.variants.length === 0) {
+      return;
+    }
+    const currentIndex = message.currentVariantIndex ?? message.variants.length;
+    const totalVariants = message.variants.length;
+    if (currentIndex >= totalVariants) return;
+    
+    const newIndex = currentIndex + 1;
+    const variant = message.variants[newIndex];
+    
+    updateChatMessage(index, {
+      content: variant?.content || message.content,
+      tokens: variant?.tokens || message.tokens,
+      latencyMs: variant?.latencyMs || message.latencyMs,
+      speed: variant?.speed || message.speed,
+      currentVariantIndex: newIndex,
+    });
+  }, [state.chatMessages, updateChatMessage]);
 
   // 复制消息内容到剪贴板
   const copyMessage = useCallback((index: number) => {
@@ -553,7 +629,7 @@ function App() {
       <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
 
       <main className="main-area">
-        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage}/>)}
+        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>)}
         <ServiceBar status={state.status} busy={state.busy} dirty={state.dirty} onSave={save} onHealth={health} onStart={start} onStop={stop}/>
       </main>
 

@@ -437,3 +437,135 @@
   border-top: 1px solid var(--line);
   margin: 0.3em 0;
 }
+
+.message-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.message:hover .message-actions,
+.message-actions:hover {
+  opacity: 1;
+}
+
+.message-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.message-actions button:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.message-actions button:active {
+  background: var(--line);
+}
+
+.message-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.message-actions button.delete-btn {
+  color: #ff4d4f;
+}
+
+.message-actions button.delete-btn:hover {
+  color: #ff4d4f;
+}
+
+.variant-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.variant-btn {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
+.variant-btn:hover:not(:disabled) {
+  background: var(--line) !important;
+}
+
+.variant-counter {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  min-width: 36px;
+  text-align: center;
+}
+
+.action-group {
+  position: relative;
+}
+
+.action-group .action-toggle {
+  width: 28px;
+  height: 28px;
+}
+
+.action-submenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 120px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--line);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.action-submenu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.action-submenu button:hover {
+  background: var(--surface-soft);
+}
+
+.action-submenu button:active {
+  background: var(--line);
+}

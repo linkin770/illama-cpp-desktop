@@ -26,6 +26,8 @@ interface ChatScreenProps {
   onEditMessage: (index: number) => void
   onRetryMessage: (index: number) => void
   onDeleteMessage: (index: number) => void
+  onPrevVariant: (index: number) => void
+  onNextVariant: (index: number) => void
 }
 
 export function ChatScreen({
@@ -44,6 +46,8 @@ export function ChatScreen({
   onEditMessage,
   onRetryMessage,
   onDeleteMessage,
+  onPrevVariant,
+  onNextVariant,
 }: ChatScreenProps) {
   const chatFeedRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -185,12 +189,12 @@ export function ChatScreen({
             data-message-index={index}
             placement={message.role === 'user' ? 'end' : 'start'}
             avatar={renderMessageAvatar(message.role)}
-            content={renderMessageContent(message, chatBusy, index, onCopyMessage)}
+            content={renderMessageContent(message, chatBusy)}
             styles={{ footer: { marginTop: -8 } }}
             footer={
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: message.role === 'user' ? 'flex-end' : 'flex-start', width: '100%' }}>
                 {renderMessageMeta(message)}
-                {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage)}
+                {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage, onPrevVariant, onNextVariant)}
               </div>
             }
           />

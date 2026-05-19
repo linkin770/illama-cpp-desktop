@@ -1,6 +1,7 @@
 import { useRef, useEffect, useMemo } from 'react'
 import { Conversations } from '@ant-design/x'
 import type { MenuProps } from 'antd'
+import { EditOutlined, DownloadOutlined, DeleteOutlined, MessageOutlined, SettingOutlined } from '@ant-design/icons'
 import type { Session, Status } from '../types'
 import { escapeHtml, statusLabel, statusClass, shortTime } from '../utils'
 
@@ -75,9 +76,7 @@ export function Sidebar({
           </span>
         </div>
       ),
-      icon: (
-        <span style={{ fontSize: 14, opacity: 0.7 }}>{'💬'}</span>
-      ),
+      icon: <MessageOutlined style={{ fontSize: 14, opacity: 0.7 }} />,
     }))
   }, [filteredSessions])
 
@@ -85,19 +84,19 @@ export function Sidebar({
     {
       key: 'edit',
       label: '编辑',
-      icon: <span>{'✎'}</span>,
+      icon: <EditOutlined />,
       onClick: () => onEditSession(sessionId),
     },
     {
       key: 'export',
       label: '导出',
-      icon: <span>{'⬇'}</span>,
+      icon: <DownloadOutlined />,
       onClick: () => onExportSession(sessionId),
     },
     {
       key: 'delete',
       label: '删除',
-      icon: <span>{'🗑'}</span>,
+      icon: <DeleteOutlined />,
       danger: true,
       onClick: () => onDeleteSession(sessionId),
     },
@@ -172,7 +171,7 @@ export function Sidebar({
           title="打开设置"
           onClick={onToggleSettings}
         >
-          <span>{'⚙'}</span>
+          <SettingOutlined />
           <span>设置</span>
         </button>
         <button type="button" className="status-card">
