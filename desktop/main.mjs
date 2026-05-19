@@ -1410,21 +1410,6 @@ function registerIpc() {
   ipcMain.handle('llama:get-state', async () => appState())
 
   /**
-   * 设置主题（深色/浅色）
-   */
-  ipcMain.handle('llama:set-theme', async (_event, isDark) => {
-    if (mainWindow) {
-      mainWindow.setTitleBarOverlay({
-        color: isDark ? '#1a1a1a' : '#ffffff',
-        symbolColor: isDark ? '#f0f0f0' : '#1a1a1a',
-        height: 36,
-      })
-      mainWindow.setBackgroundColor(isDark ? '#1a1a1a' : '#ffffff')
-    }
-    return { success: true }
-  })
-
-  /**
    * 保存配置
    */
   ipcMain.handle('llama:save-config', async (_event, payload) => {

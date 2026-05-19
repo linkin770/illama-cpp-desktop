@@ -79,7 +79,7 @@
 
 .message-meta span {
   border-radius: var(--radius-lg);
-  background: #f1f3ef;
+  background: transparent;
   color: var(--muted);
   padding: 3px 7px;
   font-size: 11px;
@@ -88,7 +88,7 @@
 }
 
 .message-meta .model-pill {
-  color: #5f665d;
+  color: var(--muted);
 }
 
 .message-actions button {
@@ -103,7 +103,7 @@
 }
 
 .message-actions button:hover {
-  background: #f1f3ef;
+  background: var(--surface-soft);
   color: var(--ink);
 }
 
@@ -560,7 +560,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: #f7f8f4;
+  background: var(--surface-soft);
 }
 
 .preview-image-wrap img {
@@ -586,7 +586,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 
 .history-row:hover,
 .history-row.active {
-  background: #eceee8;
+  background: var(--surface-soft);
 }
 
 .history-row .history-item {
@@ -606,7 +606,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   border: 0;
   border-radius: var(--radius-lg);
   background: transparent;
-  color: #7a8178;
+  color: var(--muted);
   font-weight: 700;
   opacity: 0;
 }
@@ -617,7 +617,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 }
 
 .history-more:hover {
-  background: #dde3db;
+  background: var(--surface-soft);
   color: var(--ink);
 }
 
@@ -629,8 +629,8 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   width: 150px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: #ffffff;
-  box-shadow: 0 14px 36px rgba(18, 22, 17, 0.14);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   padding: 6px;
 }
 
@@ -650,7 +650,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 }
 
 .history-menu button:hover {
-  background: #f1f2ee;
+  background: var(--surface-soft);
 }
 
 .history-menu button.danger {
@@ -840,8 +840,8 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   width: min(560px, calc(100vw - 42px));
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: #ffffff;
-  box-shadow: 0 26px 82px rgba(16, 18, 14, 0.24);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
   transform: translate(-50%, -50%);
   padding: 26px;
 }
@@ -869,7 +869,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   outline: none;
   padding: 0 12px;
   color: var(--ink);
-  background: #fff;
+  background: var(--surface-soft);
 }
 
 .history-dialog input:focus {
@@ -898,7 +898,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 }
 
 .model-trigger {
-  border: 1px solid #d7ddd3;
+  border: 1px solid var(--line);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -907,8 +907,8 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 }
 
 .model-trigger:hover {
-  background: #e9eee7;
-  border-color: #c8d2c3;
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
   color: var(--ink);
   transform: translateY(-1px);
 }
@@ -945,8 +945,8 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   z-index: 130;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: #fff;
-  box-shadow: 0 34px 100px rgba(17, 20, 16, 0.24);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
   display: grid;
   grid-template-rows: 64px minmax(0, 1fr);
   overflow: hidden;

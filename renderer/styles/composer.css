@@ -9,7 +9,7 @@
 
 .composer {
   min-height: 116px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-md);
@@ -27,6 +27,11 @@
   border-color: var(--line-strong);
 }
 
+.composer:focus-within {
+  border-color: #10a37f;
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
 .attach-wrap {
   position: relative;
 }
@@ -41,7 +46,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow);
   padding: 6px;
   display: grid;
   gap: 4px;
@@ -64,7 +69,7 @@
   left: auto;
   padding: 8px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow);
 }
 
 .attach-menu button {
@@ -146,4 +151,21 @@
 
 .ant-sender-actions-btn-loading-button.ant-btn:hover {
   color: #ff7875 !important;
+}
+
+.ant-sender-actions-btn-send-button.ant-btn-primary:not(:disabled) {
+  background-color: #10a37f !important;
+  border-color: #10a37f !important;
+  color: #ffffff !important;
+}
+
+.ant-sender-actions-btn-send-button.ant-btn-primary:not(:disabled):hover {
+  background-color: #0d8a6a !important;
+  border-color: #0d8a6a !important;
+}
+
+.ant-sender-actions-btn-send-button.ant-btn-primary:disabled {
+  background-color: var(--line-strong) !important;
+  border-color: var(--line-strong) !important;
+  color: var(--muted) !important;
 }

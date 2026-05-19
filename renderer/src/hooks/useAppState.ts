@@ -32,7 +32,6 @@ const defaultState: AppState = {
   busy: false,
   settingsOpen: false,
   toast: '',
-  darkMode: false,
   stickToBottom: true,
   isDraggingScrollbar: false,
 }
@@ -328,11 +327,6 @@ export function useAppState() {
     }))
   }, [])
 
-  // 设置深色模式
-  const setDarkMode = useCallback((dark: boolean) => {
-    setState(prev => ({ ...prev, darkMode: dark }))
-  }, [])
-
   // 设置模型信息
   const setModelInfo = useCallback((info: AppState['modelInfo']) => {
     setState(prev => ({ ...prev, modelInfo: info }))
@@ -362,15 +356,6 @@ export function useAppState() {
   const setLogs = useCallback((logs: AppState['logs']) => {
     setState(prev => ({ ...prev, logs }))
   }, [])
-
-  // 监听深色模式变化，同步到 body 类名
-  useEffect(() => {
-    if (state.darkMode) {
-      document.body.classList.add('dark-mode')
-    } else {
-      document.body.classList.remove('dark-mode')
-    }
-  }, [state.darkMode])
 
   // 组件卸载时清理 Toast 定时器
   useEffect(() => {
@@ -409,7 +394,6 @@ export function useAppState() {
     setHistorySearch,
     setHistoryMenuId,
     setAttachmentMenuOpen,
-    setDarkMode,
     setModelInfo,
     setModelInfoOpen,
     setDirty,

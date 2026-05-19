@@ -46,22 +46,11 @@
   border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-  color: #f0f0f0;
+  background: linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%);
+  color: #ffffff;
   font-weight: 800;
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.app-mark::before {
-  content: '';
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  clip-path: polygon(60% 0%, 100% 0%, 100% 40%);
-  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.25);
 }
 
 .app-mark span {
@@ -96,7 +85,5 @@
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  background: 
-    radial-gradient(circle at 50% 20%, rgba(245, 243, 239, 0.8), transparent 50%),
-    var(--bg);
+  background: var(--bg);
 }

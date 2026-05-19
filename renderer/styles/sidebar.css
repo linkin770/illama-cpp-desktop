@@ -63,7 +63,7 @@
   width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: #ffffff;
   padding: 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -73,7 +73,7 @@
 }
 
 .status-card:hover {
-  border-color: var(--line-strong);
+  border-color: #d4d4d8;
 }
 
 .status-card strong,

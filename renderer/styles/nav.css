@@ -23,9 +23,10 @@
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 16px 6px 16px 16px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   scrollbar-width: thin;
-  scrollbar-color: #ccc transparent;
+  scrollbar-color: #d4d4d8 transparent;
+  border: 1px solid #e5e5ea;
 }
 
 #chat-nav-bar.expanded::-webkit-scrollbar {
@@ -34,7 +35,7 @@
 }
 
 #chat-nav-bar.expanded::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #d4d4d8;
   border-radius: 2px;
 }
 
@@ -55,7 +56,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: right;
-  color: #999;
+  color: #6c6c6e;
   font-size: 13px;
   line-height: 1.4;
   opacity: 0;
@@ -67,29 +68,29 @@
 }
 
 #chat-nav-bar.expanded .nav-item:hover .nav-text {
-  color: #111;
+  color: #2c2c2e;
 }
 
 .nav-dash {
   flex-shrink: 0;
-  color: #bbb;
+  color: #d4d4d8;
   font-size: 14px;
   line-height: 1;
   transition: color 0.15s;
 }
 
 .nav-item.active .nav-dash {
-  color: var(--green);
+  color: #10a37f;
   font-weight: 700;
   font-size: 16px;
 }
 
 .nav-item.active .nav-text {
-  color: var(--green);
+  color: #10a37f;
 }
 
 #chat-nav-bar.expanded .nav-item.active:hover .nav-text {
-  color: var(--green);
+  color: #10a37f;
   filter: brightness(1.2);
 }
 
@@ -98,12 +99,12 @@
   max-width: 300px;
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.97);
-  color: #333;
+  color: #2c2c2e;
   font-size: 13px;
   line-height: 1.5;
   border-radius: 8px;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e5ea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 10000;
   pointer-events: none;
   display: none;
@@ -129,42 +130,4 @@
   animation: nav-flash 0.6s ease !important;
 }
 
-.dark-mode #chat-nav-bar.expanded {
-  background: rgba(40, 42, 48, 0.95);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
-}
 
-.dark-mode #chat-nav-bar.expanded::-webkit-scrollbar-thumb {
-  background: #555;
-}
-
-.dark-mode .nav-dash {
-  color: #555;
-}
-
-.dark-mode .nav-text {
-  color: #999;
-}
-
-.dark-mode .nav-item.active .nav-dash {
-  color: var(--green);
-}
-
-.dark-mode .nav-item.active .nav-text {
-  color: var(--green);
-}
-
-.dark-mode #chat-nav-bar.expanded .nav-item:hover .nav-text {
-  color: #fff;
-}
-
-.dark-mode #chat-nav-bar.expanded .nav-item.active:hover .nav-text {
-  color: var(--green);
-  filter: brightness(1.2);
-}
-
-.dark-mode #chat-nav-tooltip {
-  background: rgba(30, 30, 30, 0.97);
-  color: #ddd;
-  border-color: #444;
-}

@@ -61,6 +61,7 @@ select:focus {
   font-size: 12px;
   user-select: none;
   -webkit-app-region: drag;
+  background: transparent;
 }
 
 .gear-btn,
@@ -98,6 +99,6 @@ select:focus {
 }
 
 ::selection {
-  background: rgba(22, 163, 74, 0.2);
+  background: rgba(16, 163, 127, 0.2);
   color: var(--ink);
 }

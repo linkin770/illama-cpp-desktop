@@ -14,7 +14,7 @@ import { Toast } from './components/Toast';
 import { ChatNav } from './components/ChatNav';
 import type { ChatMessage } from './types';
 import { friendlyErrorMessage, estimateTokens } from './utils';
-import { themeConfig, darkThemeConfig } from './theme';
+import { themeConfig } from './theme';
 
 function App() {
   const {
@@ -42,7 +42,6 @@ function App() {
     setSidebarCollapsed,
     setHistorySearch,
     setHistoryMenuId,
-    setDarkMode,
     setModelInfo,
     setModelInfoOpen,
     setBusy,
@@ -51,9 +50,9 @@ function App() {
   const [renameState, setRenameState] = useState<{ open: boolean; sessionId: string; title: string; value: string } | null>(null)
 
   const currentTheme = useMemo(() => ({
-    ...(state.darkMode ? darkThemeConfig : themeConfig),
-    algorithm: state.darkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-  }), [state.darkMode]);
+    ...themeConfig,
+    algorithm: antdTheme.defaultAlgorithm,
+  }), []);
 
   // 使用 useRef 保存最新的流式请求 ID 和消息列表，避免闭包陷阱
   const streamRequestIdRef = useRef(state.streamRequestId);
@@ -551,7 +550,7 @@ function App() {
       </button>
     </div>
     <div className={`app-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} darkMode={state.darkMode} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleTheme={() => setDarkMode(!state.darkMode)} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
+      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
 
       <main className="main-area">
         {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage}/>)}

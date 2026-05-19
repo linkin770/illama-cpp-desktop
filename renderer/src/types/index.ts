@@ -170,7 +170,6 @@ export interface AppState {
   busy: boolean // 是否忙碌
   settingsOpen: boolean // 设置面板是否打开
   toast: string // Toast 提示消息
-  darkMode: boolean // 是否深色模式
   stickToBottom: boolean // 是否自动滚动到底部
   isDraggingScrollbar: boolean // 是否正在拖动滚动条
 }

@@ -13,7 +13,6 @@ interface SidebarProps {
   view: 'chat' | 'terminal'
   chatMessages: unknown[]
   status: Status
-  darkMode: boolean
   settingsOpen: boolean
   onNewChat: () => void
   onFocusChat: () => void
@@ -24,7 +23,6 @@ interface SidebarProps {
   onEditSession: (sessionId: string) => void
   onExportSession: (sessionId: string) => void
   onDeleteSession: (sessionId: string) => void
-  onToggleTheme: () => void
   onToggleSettings: () => void
   onToggleSidebar: () => void
 }
@@ -38,7 +36,6 @@ export function Sidebar({
   view,
   chatMessages,
   status,
-  darkMode,
   settingsOpen,
   onNewChat,
   onFocusChat,
@@ -49,7 +46,6 @@ export function Sidebar({
   onEditSession,
   onExportSession,
   onDeleteSession,
-  onToggleTheme,
   onToggleSettings,
 }: SidebarProps) {
   const filteredSessions = sessions
@@ -169,16 +165,6 @@ export function Sidebar({
       </div>
 
       <div className="side-bottom">
-        <button
-          type="button"
-          className="theme-toggle-btn"
-          data-action="toggle-theme"
-          title={darkMode ? '切换到浅色模式' : '切换到深色模式'}
-          onClick={onToggleTheme}
-        >
-          <span>{darkMode ? '☀' : '☽'}</span>
-          <span>{darkMode ? '浅色模式' : '深色模式'}</span>
-        </button>
         <button
           type="button"
           className={`settings-btn ${settingsOpen ? 'active' : ''}`}
