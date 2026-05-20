@@ -225,7 +225,6 @@ function App() {
     updateChatInput('');
     clearAttachments();
     setView('chat');
-    saveCurrentSession();
     try {
       // 调用流式聊天 API
       await window.llamaDesktop.streamChat({
@@ -564,8 +563,20 @@ function App() {
   // 监听来自主进程的事件（状态更新、日志、流式消息）
   useEffect(() => {
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    let contentUpdateTimer: ReturnType<typeof setTimeout> | null = null;
     let lastSaveTime = 0;
+    let pendingContent = '';
     const SAVE_INTERVAL = 2000; // 每2秒保存一次
+    const UPDATE_INTERVAL = 50; // 每50ms更新一次UI
+    
+    const flushContentUpdate = (lastIndex: number) => {
+      if (pendingContent) {
+        updateChatMessage(lastIndex, prev => ({
+          content: `${prev.content || ''}${pendingContent}`,
+        }));
+        pendingContent = '';
+      }
+    };
     
     const handleEvent = (payload: any) => {
       if (payload.type === 'status') {
@@ -581,11 +592,14 @@ function App() {
         const messages = chatMessagesRef.current;
         const lastIndex = messages.length - 1;
         if (lastIndex < 0) return;
-        // 处理流式增量内容
+        // 处理流式增量内容 - 使用防抖合并更新
         if (payload.delta) {
-          updateChatMessage(lastIndex, prev => ({
-            content: `${prev.content || ''}${payload.delta}`,
-          }));
+          pendingContent += payload.delta;
+          // 使用防抖减少UI更新频率
+          if (contentUpdateTimer) clearTimeout(contentUpdateTimer);
+          contentUpdateTimer = setTimeout(() => {
+            flushContentUpdate(lastIndex);
+          }, UPDATE_INTERVAL);
           // 定期保存（防抖）
           const now = Date.now();
           if (now - lastSaveTime > SAVE_INTERVAL) {
@@ -598,6 +612,13 @@ function App() {
         }
         // 处理流式完成
         if (payload.done) {
+          // 确保所有待处理内容都已刷新
+          if (contentUpdateTimer) {
+            clearTimeout(contentUpdateTimer);
+            contentUpdateTimer = null;
+          }
+          flushContentUpdate(lastIndex);
+          
           if (saveTimer) {
             clearTimeout(saveTimer);
             saveTimer = null;
@@ -631,6 +652,7 @@ function App() {
     return () => {
       cleanup?.();
       if (saveTimer) clearTimeout(saveTimer);
+      if (contentUpdateTimer) clearTimeout(contentUpdateTimer);
     };
   }, [patchFromBackend, updateChatMessage, setStreamRequestId, saveCurrentSession]);
 
