@@ -563,6 +563,10 @@ function App() {
 
   // 监听来自主进程的事件（状态更新、日志、流式消息）
   useEffect(() => {
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastSaveTime = 0;
+    const SAVE_INTERVAL = 2000; // 每2秒保存一次
+    
     const handleEvent = (payload: any) => {
       if (payload.type === 'status') {
         patchFromBackend({ status: payload.status });
@@ -582,9 +586,22 @@ function App() {
           updateChatMessage(lastIndex, prev => ({
             content: `${prev.content || ''}${payload.delta}`,
           }));
+          // 定期保存（防抖）
+          const now = Date.now();
+          if (now - lastSaveTime > SAVE_INTERVAL) {
+            lastSaveTime = now;
+            if (saveTimer) clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+              saveCurrentSession();
+            }, 300);
+          }
         }
         // 处理流式完成
         if (payload.done) {
+          if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+          }
           updateChatMessage(lastIndex, prev => {
             const doneContent = payload.content || prev.content || '模型返回了空内容。';
             const doneTokens = Number(prev.tokens) || estimateTokens(doneContent);
@@ -611,7 +628,10 @@ function App() {
       }
     };
     const cleanup = window.llamaDesktop?.onEvent?.(handleEvent);
-    return cleanup;
+    return () => {
+      cleanup?.();
+      if (saveTimer) clearTimeout(saveTimer);
+    };
   }, [patchFromBackend, updateChatMessage, setStreamRequestId, saveCurrentSession]);
 
   // 渲染应用界面

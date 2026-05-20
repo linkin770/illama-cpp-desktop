@@ -99,9 +99,9 @@ export function useAppState() {
 
   // 保存当前会话到历史
   const saveCurrentSession = useCallback(() => {
-    if (!state.currentSessionId || state.chatMessages.length === 0) return
-    
     setState(prev => {
+      if (!prev.currentSessionId || prev.chatMessages.length === 0) return prev
+      
       const now = Date.now()
       const next: Session = {
         id: prev.currentSessionId,
@@ -125,7 +125,7 @@ export function useAppState() {
       
       return { ...prev, sessions: updatedSessions }
     })
-  }, [state.currentSessionId, state.chatMessages.length])
+  }, [])
 
   // 打开历史会话
   const openSession = useCallback((sessionId: string) => {
@@ -134,10 +134,15 @@ export function useAppState() {
       const session = prev.sessions.find(s => s.id === sessionId)
       if (!session) return prev
       
+      // 清理session中可能残留的streaming状态
+      const cleanedMessages = Array.isArray(session.messages) 
+        ? session.messages.map(msg => ({ ...msg, streaming: false }))
+        : []
+      
       return {
         ...prev,
         currentSessionId: session.id,
-        chatMessages: Array.isArray(session.messages) ? session.messages : [],
+        chatMessages: cleanedMessages,
         chatInput: '',
         attachments: [],
         view: 'chat',
@@ -145,6 +150,8 @@ export function useAppState() {
         attachmentMenuOpen: false,
         historyMenuId: '',
         stickToBottom: true,
+        chatBusy: false,
+        streamRequestId: '',
       }
     })
   }, [saveCurrentSession])
@@ -179,6 +186,8 @@ export function useAppState() {
         sidebarPanel: 'chats',
         historyMenuId: '',
         sessions: updatedSessions,
+        chatBusy: false,
+        streamRequestId: '',
       }
     })
   }, [saveCurrentSession])

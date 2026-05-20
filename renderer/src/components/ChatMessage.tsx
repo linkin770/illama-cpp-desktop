@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CopyOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CodeOutlined, TagOutlined, ClockCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { XMarkdown } from '@ant-design/x-markdown'
 import { CodeHighlighter } from '@ant-design/x'
+import { Tooltip } from 'antd'
 import type { ChatMessage as ChatMessageType } from '../types'
 import { escapeHtml, estimateTokens } from '../utils'
 
@@ -46,12 +47,71 @@ export function renderMessageContent(
   )
 }
 
-export function renderMessageMeta(message: ChatMessageType): ReactNode {
+function ContextUsageRing({ usagePercent, ctxSize, totalSessionTokens }: { usagePercent: number, ctxSize: number, totalSessionTokens: number }): ReactNode {
+  const radius = 8
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (usagePercent / 100) * circumference
+
+  // 根据使用率选择颜色
+  let strokeColor = '#10a37f' // 默认绿色
+  if (usagePercent >= 75) {
+    strokeColor = '#ff4d4f' // 75%+ 红色
+  } else if (usagePercent >= 50) {
+    strokeColor = '#faad14' // 50-75% 黄色
+  }
+
+  return (
+    <Tooltip
+      title={
+        <div>
+          <div>当前对话已使用：{totalSessionTokens} tokens</div>
+          <div>上下文窗口大小：{ctxSize} tokens</div>
+          <div>使用率：{usagePercent.toFixed(0)}%</div>
+        </div>
+      }
+    >
+      <div className="context-usage-ring">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <circle
+            cx="12"
+            cy="12"
+            r={radius}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="3"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r={radius}
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            transform="rotate(-90 12 12)"
+          />
+        </svg>
+        <span className="context-usage-text" style={{ color: strokeColor }}>
+          {usagePercent.toFixed(0)}%
+        </span>
+      </div>
+    </Tooltip>
+  )
+}
+
+export function renderMessageMeta(
+  message: ChatMessageType,
+  ctxSize: number = 32768,
+  totalSessionTokens: number = 0
+): ReactNode {
   if (message.role !== 'assistant') return null
 
   const tokens = message.tokens || message.estimatedTokens || estimateTokens(message.content)
   const latencyMs = message.latencyMs || (message.startedAt ? Date.now() - message.startedAt : 0)
   const speed = message.speed || (tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
+  const usagePercent = Math.min(100, Math.max(0, (totalSessionTokens / ctxSize) * 100))
 
   return (
     <div className="message-meta">
@@ -72,6 +132,9 @@ export function renderMessageMeta(message: ChatMessageType): ReactNode {
           <PlayCircleOutlined style={{ fontSize: 12, marginRight: 4 }} />
           {escapeHtml(speed)}
         </span>
+      )}
+      {ctxSize > 0 && (
+        <ContextUsageRing usagePercent={usagePercent} ctxSize={ctxSize} totalSessionTokens={totalSessionTokens} />
       )}
       {message.streaming && <span>生成中</span>}
     </div>

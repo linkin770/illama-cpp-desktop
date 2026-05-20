@@ -1,5 +1,5 @@
 // 聊天屏幕组件 - 展示消息列表和输入区域
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react'
 import type { ChatMessage, Attachment } from '../types'
 import { Bubble } from '@ant-design/x'
 import {
@@ -9,6 +9,7 @@ import {
   renderMessageActions,
 } from './ChatMessage'
 import { ChatInput } from './ChatInput'
+import { estimateTokens } from '../utils'
 
 interface ChatScreenProps {
   chatMessages: ChatMessage[]
@@ -53,6 +54,19 @@ export function ChatScreen({
   const [showScrollButton, setShowScrollButton] = useState(false)
   const stickToBottomRef = useRef(true)
   const isDraggingScrollbarRef = useRef(false)
+
+  // 计算会话总令牌数（累加所有消息的tokens）
+  const totalSessionTokens = useMemo(() => {
+    return chatMessages.reduce((total, msg) => {
+      const tokens = msg.tokens || msg.estimatedTokens || estimateTokens(msg.content || '')
+      return total + Number(tokens || 0)
+    }, 0)
+  }, [chatMessages])
+
+  // 获取上下文大小
+  const ctxSize = useMemo(() => {
+    return config?.ctx_size ? Number(config.ctx_size) : 32768
+  }, [config])
 
   // 检查是否滚动到底部附近
   const isNearBottom = useCallback((el: HTMLDivElement) => {
@@ -135,11 +149,14 @@ export function ChatScreen({
   }, [isNearBottom])
 
   // 新消息时自动滚动到底部
-  useEffect(() => {
+  useLayoutEffect(() => {
     const feed = chatFeedRef.current
     if (!feed || chatMessages.length === 0) return
     if (stickToBottomRef.current && !isDraggingScrollbarRef.current) {
-      feed.scrollTop = feed.scrollHeight
+      // 使用 requestAnimationFrame 确保 DOM 完全渲染后再滚动
+      requestAnimationFrame(() => {
+        feed.scrollTop = feed.scrollHeight
+      })
     }
   }, [chatMessages])
 
@@ -193,7 +210,7 @@ export function ChatScreen({
             styles={{ footer: { marginTop: -8 } }}
             footer={
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: message.role === 'user' ? 'flex-end' : 'flex-start', width: '100%' }}>
-                {renderMessageMeta(message)}
+                {renderMessageMeta(message, ctxSize, totalSessionTokens)}
                 {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage, onPrevVariant, onNextVariant)}
               </div>
             }
