@@ -109,7 +109,10 @@ export function renderMessageMeta(
   if (message.role !== 'assistant') return null
 
   const tokens = message.tokens || message.estimatedTokens || estimateTokens(message.content)
-  const latencyMs = message.latencyMs || (message.startedAt ? Date.now() - message.startedAt : 0)
+  // 只有在流式生成中才实时计算时间，已完成的消息使用保存的 latencyMs
+  const latencyMs = message.streaming && message.startedAt 
+    ? Date.now() - message.startedAt 
+    : (message.latencyMs || 0)
   const speed = message.speed || (tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
   const usagePercent = Math.min(100, Math.max(0, (totalSessionTokens / ctxSize) * 100))
 
