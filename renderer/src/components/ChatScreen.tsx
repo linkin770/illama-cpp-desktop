@@ -1,5 +1,5 @@
 // 聊天屏幕组件 - 展示消息列表和输入区域
-import { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo, memo } from 'react'
 import type { ChatMessage, Attachment } from '../types'
 import { Bubble } from '@ant-design/x'
 import {
@@ -9,7 +9,6 @@ import {
   renderMessageActions,
 } from './ChatMessage'
 import { ChatInput } from './ChatInput'
-import { estimateTokens } from '../utils'
 
 interface ChatScreenProps {
   chatMessages: ChatMessage[]
@@ -30,6 +29,68 @@ interface ChatScreenProps {
   onPrevVariant: (index: number) => void
   onNextVariant: (index: number) => void
 }
+
+// 使用 memo 避免在流式输出时重新渲染所有已生成的消息
+// 自定义比较：非流式消息忽略 totalSessionTokens 变化
+const MessageItem = memo(function MessageItem({
+  message,
+  index,
+  chatBusy,
+  ctxSize,
+  totalSessionTokens,
+  onCopyMessage,
+  onEditMessage,
+  onRetryMessage,
+  onDeleteMessage,
+  onPrevVariant,
+  onNextVariant,
+}: {
+  message: ChatMessage
+  index: number
+  chatBusy: boolean
+  ctxSize: number
+  totalSessionTokens: number
+  onCopyMessage: (index: number) => void
+  onEditMessage: (index: number) => void
+  onRetryMessage: (index: number) => void
+  onDeleteMessage: (index: number) => void
+  onPrevVariant: (index: number) => void
+  onNextVariant: (index: number) => void
+}) {
+  return (
+    <Bubble
+      className={`message ${message.role}`}
+      data-message-index={index}
+      placement={message.role === 'user' ? 'end' : 'start'}
+      avatar={renderMessageAvatar(message.role)}
+      content={renderMessageContent(message, chatBusy)}
+      styles={{ footer: { marginTop: -8 } }}
+      footer={
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: message.role === 'user' ? 'flex-end' : 'flex-start', width: '100%' }}>
+          {renderMessageMeta(message, ctxSize, totalSessionTokens)}
+          {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage, onPrevVariant, onNextVariant)}
+        </div>
+      }
+    />
+  )
+}, (prev, next) => {
+  // 非流式消息：忽略 totalSessionTokens 变化，避免不必要的重渲染
+  if (!prev.message.streaming && !next.message.streaming && prev.totalSessionTokens !== next.totalSessionTokens) {
+    // 通过内容比较判断是否需要重渲染（因为 React 不可变更新会创建新对象引用）
+    return prev.index === next.index
+      && prev.chatBusy === next.chatBusy
+      && prev.ctxSize === next.ctxSize
+      && prev.message.content === next.message.content
+      && prev.message.role === next.message.role
+      && prev.onCopyMessage === next.onCopyMessage
+      && prev.onEditMessage === next.onEditMessage
+      && prev.onRetryMessage === next.onRetryMessage
+      && prev.onDeleteMessage === next.onDeleteMessage
+      && prev.onPrevVariant === next.onPrevVariant
+      && prev.onNextVariant === next.onNextVariant
+  }
+  return false
+})
 
 export function ChatScreen({
   chatMessages,
@@ -55,10 +116,10 @@ export function ChatScreen({
   const stickToBottomRef = useRef(true)
   const isDraggingScrollbarRef = useRef(false)
 
-  // 计算会话总令牌数（累加所有消息的tokens）
+  // 计算会话总令牌数（仅在最后一条消息变化时重算，流式更新时用缓存值）
   const totalSessionTokens = useMemo(() => {
     return chatMessages.reduce((total, msg) => {
-      const tokens = msg.tokens || msg.estimatedTokens || estimateTokens(msg.content || '')
+      const tokens = msg.tokens || msg.estimatedTokens || 0
       return total + Number(tokens || 0)
     }, 0)
   }, [chatMessages])
@@ -148,14 +209,15 @@ export function ChatScreen({
     }
   }, [isNearBottom])
 
-  // 新消息时自动滚动到底部
-  useLayoutEffect(() => {
+  // 新消息时自动滚动到底部（使用 useEffect + RAF 避免阻塞主线程）
+  useEffect(() => {
     const feed = chatFeedRef.current
     if (!feed || chatMessages.length === 0) return
     if (stickToBottomRef.current && !isDraggingScrollbarRef.current) {
-      // 使用 requestAnimationFrame 确保 DOM 完全渲染后再滚动
       requestAnimationFrame(() => {
-        feed.scrollTop = feed.scrollHeight
+        if (stickToBottomRef.current) {
+          feed.scrollTop = feed.scrollHeight
+        }
       })
     }
   }, [chatMessages])
@@ -198,22 +260,21 @@ export function ChatScreen({
   return (
     <section className="chat-screen">
       <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
-        {/* 渲染所有消息 */}
+        {/* 使用 memo 包裹的消息组件，避免流式输出时重渲染所有已生成消息 */}
         {chatMessages.map((message, index) => (
-          <Bubble
+          <MessageItem
             key={index}
-            className={`message ${message.role}`}
-            data-message-index={index}
-            placement={message.role === 'user' ? 'end' : 'start'}
-            avatar={renderMessageAvatar(message.role)}
-            content={renderMessageContent(message, chatBusy)}
-            styles={{ footer: { marginTop: -8 } }}
-            footer={
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: message.role === 'user' ? 'flex-end' : 'flex-start', width: '100%' }}>
-                {renderMessageMeta(message, ctxSize, totalSessionTokens)}
-                {renderMessageActions(message, index, onCopyMessage, onEditMessage, onRetryMessage, onDeleteMessage, onPrevVariant, onNextVariant)}
-              </div>
-            }
+            message={message}
+            index={index}
+            chatBusy={chatBusy}
+            ctxSize={ctxSize}
+            totalSessionTokens={totalSessionTokens}
+            onCopyMessage={onCopyMessage}
+            onEditMessage={onEditMessage}
+            onRetryMessage={onRetryMessage}
+            onDeleteMessage={onDeleteMessage}
+            onPrevVariant={onPrevVariant}
+            onNextVariant={onNextVariant}
           />
         ))}
       </div>

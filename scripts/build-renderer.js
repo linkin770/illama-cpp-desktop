@@ -3,8 +3,9 @@ import * as esbuild from 'esbuild'
 await esbuild.build({
   entryPoints: ['renderer/src/main.tsx'],
   bundle: true,
-  minify: false,
+  minify: true,
   sourcemap: true,
+  treeShaking: true,
   outfile: 'renderer/dist/main.js',
   platform: 'browser',
   target: ['chrome120'],

@@ -248,6 +248,7 @@
   border-radius: 50%;
   background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.4), transparent);
   animation: pulse-ring 1.5s linear infinite;
+  will-change: transform, opacity;
 }
 
 .send-btn.stop-btn:hover {

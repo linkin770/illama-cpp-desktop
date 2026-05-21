@@ -107,6 +107,13 @@
   color: var(--ink);
 }
 
+
+
+/* Attach button inside Sender footer */
+.ant-sender-footer .attach-wrap {
+  position: static;
+}
+
 .composer-wrap {
   width: min(1320px, 100%);
   max-width: 100%;
@@ -575,6 +582,22 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 .history-list {
   gap: 2px;
 }
+/* Make history conversation items match side-action button sizing */
+.ant-conversations-item {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 120ms ease;
+}
+
+.ant-conversations-item:not(.ant-conversations-item-disabled):hover,
+.ant-conversations-item-active {
+  background: var(--surface-soft);
+}
+
 
 .history-row {
   position: relative;
@@ -959,4 +982,100 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   gap: 18px;
   padding: 0 18px 0 22px;
   border-bottom: 1px solid var(--line);
+}
+/* Model info modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  max-width: 560px;
+  width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #111;
+}
+
+.modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.close-btn:hover { color: #333; }
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  min-width: 100px;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.info-value {
+  font-size: 13px;
+  color: #333;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  color: #888;
+  padding: 24px;
+}
+
+.error-message {
+  color: #f5222d;
+  padding: 12px;
+  background: #fff2f0;
+  border-radius: 6px;
+  font-size: 13px;
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * illama Desktop - Electron 主进程入口文件
  * 负责窗口管理、llama.cpp 服务启动/停止、IPC 通信、系统托盘管理等核心功能
  */
@@ -39,6 +39,7 @@ let runtimeStatus = {              // 运行时状态
 }
 let logs = []                      // 日志列表
 let chatAbortController = null     // 聊天流中断控制器
+let currentStreamRequestId = ''    // 当前流式请求 ID
 
 // ============ 路径辅助函数 ============
 
@@ -1666,7 +1667,7 @@ function registerIpc() {
               content: `${text}${textBlocks.join('')}${fileBlocks.join('')}`,
             }
           })
-          .filter(message => Array.isArray(message.content) || String(message.content || '').trim())
+          .filter(message => !message.localOnly).filter(message => Array.isArray(message.content) || String(message.content || '').trim())
       : []
 
     if (messages.length === 0) {
@@ -1768,7 +1769,7 @@ function registerIpc() {
               content: `${text}${textBlocks.join('')}${fileBlocks.join('')}`,
             }
           })
-          .filter(message => Array.isArray(message.content) || String(message.content || '').trim())
+          .filter(message => !message.localOnly).filter(message => Array.isArray(message.content) || String(message.content || '').trim())
       : []
 
     if (messages.length === 0) {
@@ -1803,6 +1804,7 @@ function registerIpc() {
     }
 
     let buffer = ''
+
     const decoder = new TextDecoder('utf-8')
 
     while (true) {
@@ -1879,6 +1881,36 @@ function registerIpc() {
   })
 
   /**
+   * 选择附件（按类型过滤）
+   */
+  ipcMain.handle('llama:pick-attachments', async (_event, payload) => {
+    const kind = payload?.kind || 'file';
+    const filters = kind === 'image'
+      ? [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'] }]
+      : kind === 'text'
+      ? [{ name: 'Text', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'c', 'cpp', 'h', 'rs', 'go'] },
+         { name: 'Documents', extensions: ['docx', 'doc', 'xlsx', 'xls', 'xlsb', 'pdf'] }]
+      : kind === 'pdf'
+      ? [{ name: 'PDF', extensions: ['pdf'] }]
+      : [{ name: 'All Files', extensions: ['*'] }];
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile', 'multiSelections'],
+      filters,
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return [];
+    }
+
+    const attachments = await Promise.all(
+      result.filePaths.map(filePath => buildAttachment(filePath))
+    );
+
+    return attachments;
+  })
+
+  /**
    * 选择模型文件
    */
   ipcMain.handle('llama:select-model', async () => {
@@ -1931,7 +1963,20 @@ function registerIpc() {
   /**
    * 打开外部链接
    */
-  ipcMain.handle('llama:open-url', async (_event, url) => {
+  
+  /**
+   * 选择文件（通用文件选择器）
+   */
+  ipcMain.handle('llama:pick-file', async (_event, options) => {
+    const dlg = options?.properties
+      ? { properties: options.properties }
+      : { properties: ['openFile'], filters: options?.filters || [] };
+    const r = await dialog.showOpenDialog(mainWindow, dlg);
+    if (r.canceled || !r.filePaths.length) return null;
+    return r.filePaths[0];
+  })
+
+ipcMain.handle('llama:open-url', async (_event, url) => {
     await shell.openExternal(url)
     return { ok: true }
   })

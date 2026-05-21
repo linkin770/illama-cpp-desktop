@@ -5,7 +5,7 @@ import { XMarkdown } from '@ant-design/x-markdown'
 import { CodeHighlighter } from '@ant-design/x'
 import { Tooltip } from 'antd'
 import type { ChatMessage as ChatMessageType } from '../types'
-import { escapeHtml, estimateTokens } from '../utils'
+import { escapeHtml } from '../utils'
 
 export function renderMessageContent(
   message: ChatMessageType,
@@ -21,6 +21,12 @@ export function renderMessageContent(
     return content ? <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span> : null
   }
 
+  // 流式输出时使用普通 span 显示，避免频繁的 Markdown 解析
+  if (message.streaming) {
+    return <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span>
+  }
+
+  // 消息完成后使用 XMarkdown 渲染
   return (
     <XMarkdown
       className="x-markdown-light"
@@ -108,13 +114,12 @@ export function renderMessageMeta(
 ): ReactNode {
   if (message.role !== 'assistant') return null
 
-  const tokens = message.tokens || message.estimatedTokens || estimateTokens(message.content)
+  const tokens = message.tokens || message.estimatedTokens || 0
   // 只有在流式生成中才实时计算时间，已完成的消息使用保存的 latencyMs
   const latencyMs = message.streaming && message.startedAt 
     ? Date.now() - message.startedAt 
     : (message.latencyMs || 0)
   const speed = message.speed || (tokens && latencyMs ? `${(Number(tokens) / (latencyMs / 1000)).toFixed(2)} t/s` : '')
-  const usagePercent = Math.min(100, Math.max(0, (totalSessionTokens / ctxSize) * 100))
 
   return (
     <div className="message-meta">
@@ -136,8 +141,9 @@ export function renderMessageMeta(
           {escapeHtml(speed)}
         </span>
       )}
-      {ctxSize > 0 && (
-        <ContextUsageRing usagePercent={usagePercent} ctxSize={ctxSize} totalSessionTokens={totalSessionTokens} />
+      {/* 流式生成时不渲染 ContextUsageRing，避免每120ms重绘SVG */}
+      {!message.streaming && ctxSize > 0 && (
+        <ContextUsageRing usagePercent={Math.min(100, Math.max(0, (totalSessionTokens / ctxSize) * 100))} ctxSize={ctxSize} totalSessionTokens={totalSessionTokens} />
       )}
       {message.streaming && <span>生成中</span>}
     </div>

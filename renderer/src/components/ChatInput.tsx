@@ -73,31 +73,7 @@ export function ChatInput({
     return labels[kind] || '文件'
   }
 
-  const prefixNode = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <div className="attach-wrap">
-        <button
-          className="round-btn"
-          type="button"
-          onClick={handleAttachButtonClick}
-          title="添加内容"
-        >
-          +
-        </button>
-      </div>
-      <button
-        className="model-chip model-trigger"
-        type="button"
-        onClick={onOpenModelInfo}
-        title={escapeHtml(String(config?.model || ''))}
-      >
-        <span className="model-chip-icon">{'☯'}</span>
-        <span className="model-chip-label">{escapeHtml(modelName(String(config?.model)))}</span>
-      </button>
-    </div>
-  )
-
-  return (
+    return (
     <div className="composer-wrap">
       {attachments.length > 0 && (
         <div className="attachment-row">
@@ -125,17 +101,41 @@ export function ChatInput({
         onCancel={onAbort}
         loading={chatBusy}
         placeholder="输入一条消息……"
-        prefix={prefixNode}
-        footer={
-          <div className="composer-hint">按住 Enter 发送，Shift + Enter 换行</div>
-        }
-      />
+        footer={(actionNode) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="attach-wrap" style={{ position: "static" }}>
+                <button
+                  className="round-btn"
+                  type="button"
+                  onClick={handleAttachButtonClick}
+                  title="添加内容"
+                >
+                  +
+                </button>
+              </div>
+              <button
+                className="model-chip model-trigger"
+                type="button"
+                onClick={onOpenModelInfo}
+                title={escapeHtml(String(config?.model || ""))}
+              >
+                <span className="model-chip-icon">{"☯"}</span>
+                <span className="model-chip-label">{escapeHtml(modelName(String(config?.model)))}</span>
+              </button>
+            </div>
+            <div className="composer-hint" style={{ flex: 1, textAlign: "center", margin: 0, fontSize: 12 }}>按住 Enter 发送，Shift + Enter 换行 </div>
+            {actionNode}
+          </div>
+        )}
+            suffix={false}
+/>
 
       {attachmentMenuOpen && attachmentMenuPosition && (
         <>
           <div className="attach-menu-backdrop" onClick={() => setAttachmentMenuOpen(false)} />
           <div
-            className="attach-menu"
+            className="attach-menu floating"
             style={{ left: attachmentMenuPosition.left, top: attachmentMenuPosition.top }}
           >
             <button type="button" onClick={() => { onPickAttachment('image'); setAttachmentMenuOpen(false) }}>

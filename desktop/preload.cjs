@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   streamChat: payload => ipcRenderer.invoke('llama:chat-stream', payload),
   abortChat: () => ipcRenderer.invoke('llama:chat-abort'),
   getModelInfo: payload => ipcRenderer.invoke('llama:get-model-info', payload),
-  pickFile: options => ipcRenderer.invoke('llama:pick-file', options?.properties ? options : { filters: options }),
+  pickFile: options => ipcRenderer.invoke('llama:pick-file', options),
   pickAttachments: payload => ipcRenderer.invoke('llama:pick-attachments', payload),
   revealPath: filePath => ipcRenderer.invoke('llama:reveal-path', { filePath }),
   openUrl: url => ipcRenderer.invoke('llama:open-url', { url }),

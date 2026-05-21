@@ -1,4 +1,4 @@
-// 主应用组件 - 整合所有功能模块
+﻿// 主应用组件 - 整合所有功能模块
 import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import { XProvider } from '@ant-design/x';
 import zhCN from '@ant-design/x/locale/zh_CN';
@@ -227,11 +227,24 @@ function App() {
     setView('chat');
     try {
       // 调用流式聊天 API
-      await window.llamaDesktop.streamChat({
+      const result = await window.llamaDesktop.streamChat({
         requestId,
         config: state.config,
         messages: allMessages.slice(0, -1),
       });
+      // 安全网：如果事件处理器未及时处理 done 事件，用 IPC 返回值兜底
+      const latestMsgs = chatMessagesRef.current;
+      const lastIdx = latestMsgs.length - 1;
+      if (lastIdx >= 0 && latestMsgs[lastIdx].role === 'assistant' && latestMsgs[lastIdx].streaming) {
+        updateChatMessage(lastIdx, prev => ({
+          content: result.content || prev.content || ' ',
+          streaming: false,
+          tokens: result.content ? estimateTokens(result.content) : prev.tokens,
+          estimatedTokens: result.content ? estimateTokens(result.content) : prev.estimatedTokens,
+          latencyMs: prev.startedAt ? Date.now() - prev.startedAt : prev.latencyMs,
+          speed: '',
+        }));
+      }
     }
     catch (error) {
       // 如果出错，移除空的助手消息并添加系统错误消息
@@ -332,37 +345,32 @@ function App() {
     setStreamRequestId(requestId);
     setChatBusy(true);
     try {
-      const startedAt = performance.now();
+      // 流式事件处理器会自动更新消息内容和元数据，这里只等待流完成
       const result = await window.llamaDesktop.streamChat({
         requestId,
         config: state.config,
         messages: allMessages.slice(0, -1),
       });
-      const latencyMs = Math.round(performance.now() - startedAt);
-      const usage = result.raw?.usage;
-      const completionTokens = usage?.completion_tokens || '';
-      const totalTokens = usage?.total_tokens || '';
-      const displayTokens = totalTokens || completionTokens || '';
-      const speedTokens = completionTokens || totalTokens || '';
-      // 计算生成速度
-      const speed = speedTokens && latencyMs
-        ? `${(Number(speedTokens) / (latencyMs / 1000)).toFixed(2)} t/s`
-        : '';
-      const lastIndex = allMessages.length;
-      const estimatedTokens = estimateTokens(result.content || '');
-      const newContent = result.content || allMessages[lastIndex - 1]?.content || `基于"${userMessage.content}"重试后，模型返回了空内容。`;
-      
-      // 更新助手消息的内容和元数据
-      updateChatMessage(lastIndex - 1, {
-        content: newContent,
-        tokens: displayTokens || estimatedTokens,
-        estimatedTokens,
-        latencyMs,
-        speed: speed || (displayTokens ? `${(Number(displayTokens) / (latencyMs / 1000)).toFixed(2)} t/s` : ''),
-        streaming: false,
-        variants: existingVariants,
-        currentVariantIndex: existingVariants.length,
-      });
+      const latestMessages = chatMessagesRef.current;
+      const targetIdx = latestMessages.length - 1;
+      // 安全网：如果事件处理器未及时处理 done 事件
+      if (targetIdx >= 0 && latestMessages[targetIdx]?.role === 'assistant' && latestMessages[targetIdx]?.streaming) {
+        updateChatMessage(targetIdx, prev => ({
+          content: result.content || prev.content || ' ',
+          streaming: false,
+          tokens: result.content ? estimateTokens(result.content) : prev.tokens,
+          estimatedTokens: result.content ? estimateTokens(result.content) : prev.estimatedTokens,
+          latencyMs: prev.startedAt ? Date.now() - prev.startedAt : prev.latencyMs,
+          speed: '',
+        }));
+      }
+      // 确保变体信息在事件处理器更新后被保留
+      if (targetIdx >= 0 && latestMessages[targetIdx].role === 'assistant') {
+        updateChatMessage(targetIdx, {
+          variants: existingVariants,
+          currentVariantIndex: existingVariants.length,
+        });
+      }
       saveCurrentSession();
     }
     catch (error) {
@@ -563,20 +571,8 @@ function App() {
   // 监听来自主进程的事件（状态更新、日志、流式消息）
   useEffect(() => {
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
-    let contentUpdateTimer: ReturnType<typeof setTimeout> | null = null;
     let lastSaveTime = 0;
-    let pendingContent = '';
     const SAVE_INTERVAL = 2000; // 每2秒保存一次
-    const UPDATE_INTERVAL = 50; // 每50ms更新一次UI
-    
-    const flushContentUpdate = (lastIndex: number) => {
-      if (pendingContent) {
-        updateChatMessage(lastIndex, prev => ({
-          content: `${prev.content || ''}${pendingContent}`,
-        }));
-        pendingContent = '';
-      }
-    };
     
     const handleEvent = (payload: any) => {
       if (payload.type === 'status') {
@@ -592,14 +588,11 @@ function App() {
         const messages = chatMessagesRef.current;
         const lastIndex = messages.length - 1;
         if (lastIndex < 0) return;
-        // 处理流式增量内容 - 使用防抖合并更新
+        // 处理流式增量内容 - 即时更新
         if (payload.delta) {
-          pendingContent += payload.delta;
-          // 使用防抖减少UI更新频率
-          if (contentUpdateTimer) clearTimeout(contentUpdateTimer);
-          contentUpdateTimer = setTimeout(() => {
-            flushContentUpdate(lastIndex);
-          }, UPDATE_INTERVAL);
+          updateChatMessage(lastIndex, prev => ({
+            content: (prev.content || '') + payload.delta,
+          }));
           // 定期保存（防抖）
           const now = Date.now();
           if (now - lastSaveTime > SAVE_INTERVAL) {
@@ -612,13 +605,7 @@ function App() {
         }
         // 处理流式完成
         if (payload.done) {
-          // 确保所有待处理内容都已刷新
-          if (contentUpdateTimer) {
-            clearTimeout(contentUpdateTimer);
-            contentUpdateTimer = null;
-          }
-          flushContentUpdate(lastIndex);
-          
+
           if (saveTimer) {
             clearTimeout(saveTimer);
             saveTimer = null;
@@ -652,7 +639,6 @@ function App() {
     return () => {
       cleanup?.();
       if (saveTimer) clearTimeout(saveTimer);
-      if (contentUpdateTimer) clearTimeout(contentUpdateTimer);
     };
   }, [patchFromBackend, updateChatMessage, setStreamRequestId, saveCurrentSession]);
 

@@ -146,13 +146,17 @@ export function ChatNav({ chatMessages }: ChatNavProps) {
     updateNavPosition()
     window.addEventListener('resize', updateNavPosition)
 
-    // 监听 DOM 变化
-    const observer = new MutationObserver(updateNavPosition)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+    // 使用 ResizeObserver 替代 MutationObserver，避免流式更新时频繁触发
+    let resizeObserver: ResizeObserver | null = null
+    const composer = document.querySelector('.composer-wrap') as HTMLElement
+    if (composer && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(updateNavPosition)
+      resizeObserver.observe(composer)
+    }
 
     return () => {
       window.removeEventListener('resize', updateNavPosition)
-      observer.disconnect()
+      resizeObserver?.disconnect()
     }
   }, [])
 

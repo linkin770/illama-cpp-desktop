@@ -11,7 +11,6 @@
   min-height: 0;
   overflow-y: auto;
   padding: 32px 0 24px;
-  scroll-behavior: smooth;
   min-width: 0;
 }
 
@@ -189,7 +188,6 @@
   line-height: 1.75;
   white-space: pre-wrap;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 140ms ease;
   color: var(--ink);
 }
 
