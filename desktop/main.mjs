@@ -5,8 +5,8 @@
 
 import { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { existsSync, rmSync } from 'node:fs'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -1382,6 +1382,13 @@ function createMainWindow() {
   
   // 禁用默认菜单
   Menu.setApplicationMenu(null)
+  // Explicitly register DevTools shortcut (titleBarStyle hidden on Windows may swallow default)
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === "i") {
+      mainWindow?.webContents.toggleDevTools()
+      event.preventDefault()
+    }
+  })
 }
 
 /**
@@ -1985,7 +1992,158 @@ ipcMain.handle('llama:open-url', async (_event, url) => {
     appIsQuitting = true
     app.quit()
     return { ok: true }
+  })
+  // ============ Skill Management ============
+
+  const skillsDir = path.join(rootDir, 'skills')
+
+  function parseSkillMarkdown(content) {
+    // Match frontmatter: opening --- to either closing --- or EOF
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)(\r?\n---|$)/)
+    if (!fmMatch) return { name: '', description: '', whenToUse: '', argumentHint: '', body: content }
+    const fm = fmMatch[1]
+    const body = content.slice(fmMatch[0].length).trim()
+    const get = (key) => {
+      const m = fm.match(new RegExp('^' + key + ':\\s*(.+)$', 'm'))
+      return m ? m[1].trim() : ''
+    }
+    const toolsMatch = fm.match(/^allowedTools:\s*\r?\n([\s\S]*?)(?=\r?\n\w|$)/m)
+    let allowedTools = []
+    if (toolsMatch) {
+      allowedTools = toolsMatch[1].split('\n').map(l => l.trim().replace(/^-\s*/, '')).filter(Boolean)
+    }
+    return { name: get('name'), description: get('description'), whenToUse: get('whenToUse'), argumentHint: get('argumentHint') || '', allowedTools, body }
+  }
+
+  ipcMain.handle('llama:skill-list', async () => {
+    try {
+      await mkdir(skillsDir, { recursive: true })
+      const entries = await readdir(skillsDir, { withFileTypes: true })
+      const skills = []
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue
+        const mdPath = path.join(skillsDir, entry.name, 'SKILL.md')
+        if (!existsSync(mdPath)) continue
+        const content = await readFile(mdPath, 'utf-8')
+        const parsed = parseSkillMarkdown(content)
+        skills.push({ dirName: entry.name, filePath: mdPath, ...parsed })
+      }
+      return skills
+    } catch (error) {
+      console.error('skill-list error:', error)
+      return []
+    }
   })
+
+  ipcMain.handle('llama:skill-create', async (_event, payload) => {
+    const { name, content } = payload
+    const safeName = name.replace(/[<>:"\/\\|?*]/g, '_').trim()
+    if (!safeName) throw new Error('Skill name cannot be empty')
+    const skillDir = path.join(skillsDir, safeName)
+    await mkdir(skillDir, { recursive: true })
+    const mdPath = path.join(skillDir, 'SKILL.md')
+    await writeFile(mdPath, content, 'utf-8')
+    return { ok: true, dirName: safeName, filePath: mdPath }
+  })
+
+  ipcMain.handle('llama:skill-delete', async (_event, payload) => {
+    const { name } = payload
+    if (!name) throw new Error('Skill name cannot be empty')
+    const skillDir = path.join(skillsDir, name)
+    if (existsSync(skillDir)) {
+      rmSync(skillDir, { recursive: true, force: true })
+    }
+    return { ok: true }
+  })
+  ipcMain.handle('llama:skill-read', async (_event, payload) => {
+    const { name } = payload
+    if (!name) throw new Error('Skill name cannot be empty')
+    const skillDir = path.join(skillsDir, name)
+    const mdPath = path.join(skillDir, 'SKILL.md')
+    if (!existsSync(mdPath)) throw new Error('SKILL.md not found')
+    const raw = await readFile(mdPath, 'utf-8')
+    const parsed = parseSkillMarkdown(raw)
+    return { dirName: name, filePath: mdPath, raw, ...parsed }
+  })
+  /**
+   * Auto-generate SKILL.md content using local LLM
+   */
+  ipcMain.handle('llama:skill-generate', async (_event, payload) => {
+    const { name, description, whenToUse, argumentHint } = payload;
+    if (!name) throw new Error('Skill name cannot be empty');
+
+    const config = await loadConfig();
+    const url = localUrl(config) + '/v1/chat/completions';
+
+    const systemPrompt = [
+      'You are a skill definition generator. Based on the requirements below, generate a COMPLETE SKILL.md file following the Claude Code SKILL.md format exactly.',
+      '',
+      '## Output Format (strictly follow this)',
+      '---',
+      'name: [exact skill name]',
+      'description: [1-2 sentence description]',
+      'whenToUse: [clear trigger condition]',
+      'argumentHint: [optional hint for ARGUMENTS]',
+      'allowedTools:',
+      '  - Read',
+      '  - Write',
+      '---',
+      '',
+      '[Detailed system prompt for the AI assistant, 3-8 paragraphs, covering:',
+      ' - Role and expertise definition',
+      ' - Step-by-step workflow instructions',
+      ' - Output format requirements',
+      ' - Important constraints and notes]',
+      '',
+      'ARGUMENTS_PLACEHOLDER',
+      '',
+      'CRITICAL RULES:\n1. Start with --- on its own line\n2. End with --- on its own line after allowedTools\n3. NO markdown code fences\n4. NO explanations before or after\n5. Output ONLY the SKILL.md, nothing else.',
+    ].join('\n');
+
+    const userPrompt = [
+      '## User Requirements',
+      '- Name: ' + name,
+      '- Description: ' + (description || '(not specified)'),
+      '- When to use: ' + (whenToUse || '(not specified)'),
+      '- Argument hint: ' + (argumentHint || '(none)'),
+      '',
+      'Generate the SKILL.md now:',
+    ].join('\n');
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ];
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: path.basename(config.model || 'local-model'),
+        messages,
+        temperature: 0.7,
+        top_p: 0.9,
+        max_tokens: 2048,
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(120000),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error('LLM returned ' + response.status + (text ? ': ' + text.slice(0, 300) : ''));
+    }
+
+    const data = await response.json();
+    let content = data?.choices?.[0]?.message?.content || data?.content || '';
+    content = String(content || '').trim();
+
+    // Clean up markdown fences if LLM wrapped them
+    content = content.replace(/^```(?:markdown|yaml)?\s*\n?/i, '').replace(/\n?```\s*$/, '');
+
+    return { ok: true, content };
+  });
+
 }
 
 // ============ 应用启动与生命周期 ============

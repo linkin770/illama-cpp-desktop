@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { FileImageOutlined, FileTextOutlined } from '@ant-design/icons'
+﻿import { useState, useEffect } from 'react'
+import { FileImageOutlined, FileTextOutlined, ToolOutlined } from '@ant-design/icons'
 import { Sender } from '@ant-design/x'
-import type { Attachment } from '../types'
+import type { Attachment, Skill } from '../types'
 import { escapeHtml, modelName } from '../utils'
 
 interface ChatInputProps {
@@ -31,6 +31,10 @@ export function ChatInput({
 }: ChatInputProps) {
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const [attachmentMenuPosition, setAttachmentMenuPosition] = useState<{ left: number; top: number } | null>(null)
+  const [skillMenuOpen, setSkillMenuOpen] = useState(false)
+  const [skillMenuPosition, setSkillMenuPosition] = useState<{ left: number; bottom: number } | null>(null)
+  const [skillMenuSkills, setSkillMenuSkills] = useState<Skill[]>([])
+  const [skillsLoading, setSkillsLoading] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -42,6 +46,20 @@ export function ChatInput({
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
+
+  const handleSkillButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const left = Math.min(Math.max(rect.left, 12), window.innerWidth - 236 - 12)
+    const bottom = window.innerHeight - rect.top + 6
+    setSkillMenuPosition({ left: Math.round(left), bottom: Math.round(bottom) })
+    setSkillMenuOpen(true)
+    if (skillMenuSkills.length === 0 && !skillsLoading) {
+      setSkillsLoading(true)
+      try { const list = await window.llamaDesktop.listSkills(); setSkillMenuSkills(list) } catch (_) {}
+      setSkillsLoading(false)
+    }
+  }
 
   const handleAttachButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
@@ -111,6 +129,9 @@ export function ChatInput({
                   +
                 </button>
               </div>
+              <div className="skill-wrap" style={{ position: "static" }}>
+                <button className="round-btn" type="button" onClick={handleSkillButtonClick} title="选择技能"><ToolOutlined /></button>
+              </div>
               <button
                 className="model-chip model-trigger"
                 type="button"
@@ -143,6 +164,28 @@ export function ChatInput({
               <FileTextOutlined />
               <span>文本文件</span>
             </button>
+          </div>
+        </>
+      )}
+      {skillMenuOpen && skillMenuPosition && (
+        <>
+          <div className="attach-menu-backdrop" onClick={() => setSkillMenuOpen(false)} />
+          <div className="attach-menu floating slide-up skill-menu" style={{ left: skillMenuPosition.left, bottom: skillMenuPosition.bottom, maxHeight: 192, overflowY: "auto" }}>
+            {skillsLoading ? (
+              <div style={{ padding: 16, textAlign: "center", color: "var(--muted)", fontSize: 12 }}>加载中...</div>
+            ) : skillMenuSkills.length === 0 ? (
+              <div style={{ padding: 16, textAlign: "center", color: "var(--muted)", fontSize: 12 }}>还没有技能<br /><span style={{ fontSize: 10 }}>去设置中创建</span></div>
+            ) : (
+              skillMenuSkills.map(skill => (
+                <button key={skill.dirName} type="button" onClick={() => { setSkillMenuOpen(false); onPickSkill(skill) }}>
+                  <ToolOutlined />
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1 }}>
+                    <strong style={{ fontSize: 12 }}>{skill.name}</strong>
+                    {skill.description && <small style={{ fontSize: 10, color: "var(--muted)", fontWeight: 400 }}>{skill.description.slice(0, 30)}{skill.description.length > 30 ? "..." : ""}</small>}
+                  </span>
+                </button>
+              ))
+            )}
           </div>
         </>
       )}

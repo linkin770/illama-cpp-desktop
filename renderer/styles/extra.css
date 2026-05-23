@@ -1,4 +1,4 @@
-.toast {
+﻿.toast {
   position: fixed;
   top: 18px;
   left: 50%;
@@ -1079,3 +1079,7 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
   border-radius: 6px;
   font-size: 13px;
 }
+
+.skill-menu.floating { width: 236px; }
+.skill-menu button { min-height: 52px; height: auto; padding: 6px 12px; display: flex; align-items: center; }
+.skill-menu button strong { line-height: 1.3; }

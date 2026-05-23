@@ -1,7 +1,7 @@
-// 设置面板组件 - 配置 llama 服务
-import React from 'react'
-import { SettingOutlined, DesktopOutlined, SlidersOutlined, ApiOutlined, CodeOutlined, FileTextOutlined } from '@ant-design/icons'
-import type { Config, Validation, LogEntry } from '../types'
+﻿// 设置面板组件 - 配置 llama 服务
+import React, { useState, useEffect } from 'react'
+import { SettingOutlined, DesktopOutlined, SlidersOutlined, ApiOutlined, CodeOutlined, FileTextOutlined, ToolOutlined } from '@ant-design/icons'
+import type { Config, Validation, LogEntry, Skill } from '../types'
 import { escapeHtml, visibleLogs, statusLabel, statusClass } from '../utils'
 
 interface SettingsPanelProps {
@@ -24,11 +24,277 @@ interface SettingsPanelProps {
 const settingsTabs = [
   { id: 'overview', icon: <SettingOutlined />, label: '概览', hint: '服务入口与基础运行信息' },
   { id: 'display', icon: <DesktopOutlined />, label: '展示', hint: '模型标签、模板与显示项' },
+  { id: 'skills', icon: <ToolOutlined />, label: '技能', hint: '管理自定义技能提示词' },
   { id: 'sampling', icon: <SlidersOutlined />, label: '采样与惩罚', hint: '温度、Top-K/P、重复与 DRY' },
   { id: 'mcp', icon: <ApiOutlined />, label: 'MCP', hint: '预留扩展和工具接入' },
   { id: 'developer', icon: <CodeOutlined />, label: '开发者', hint: '线程、GPU 与批处理' },
   { id: 'logs', icon: <FileTextOutlined />, label: '日志', hint: '当前 llama.cpp 服务输出' },
 ]
+
+
+// ========== NewSkillModal ==========
+function NewSkillModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("")
+  const [desc, setDesc] = useState("")
+  const [whenToUse, setWhenToUse] = useState("")
+  const [argHint, setArgHint] = useState("")
+  const [genContent, setGenContent] = useState("")
+  const [generating, setGenerating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [genError, setGenError] = useState("")
+
+  const handleGenerate = async () => {
+    if (!name.trim()) { setGenError("请先填写技能名称"); return }
+    setGenerating(true)
+    setGenError("")
+    setGenContent("")
+    try {
+      const result = await window.llamaDesktop.generateSkillContent({
+        name: name.trim(),
+        description: desc.trim(),
+        whenToUse: whenToUse.trim(),
+        argumentHint: argHint.trim(),
+      })
+      setGenContent(result.content)
+    } catch (e) {
+      setGenError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleSave = async () => {
+    const content = genContent.trim()
+    if (!content) { setGenError("请先生成 SKILL.md 内容"); return }
+    if (!name.trim()) { setGenError("技能名称不能为空"); return }
+    setSaving(true)
+    try {
+      await window.llamaDesktop.createSkill({ name: name.trim(), content })
+      onSaved()
+    } catch (e) {
+      setGenError("保存失败: " + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 100001,
+      background: "rgba(0,0,0,0.4)", display: "flex",
+      alignItems: "center", justifyContent: "center",
+    }} onClick={onClose}>
+      <div style={{
+        background: "var(--surface)", borderRadius: "var(--radius-lg)",
+        padding: 24, width: 580, maxHeight: "88vh", overflow: "auto",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h3 style={{ margin: 0, fontSize: 17 }}>新建技能</h3>
+          <button className="icon-btn" onClick={onClose} style={{ fontSize: 16 }}>✕</button>
+        </div>
+
+        <div style={{
+          background: "var(--surface-soft)", borderRadius: "var(--radius-lg)",
+          padding: "16px 18px", marginBottom: 16,
+          border: "1px solid var(--line)",
+        }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
+            填写基本信息后，点击下方按钮由本地 LLM 自动生成完整的 SKILL.md
+          </div>
+          <div className="form-grid single">
+            <label className="field">
+            <span>技能名称 <em style={{ color: "var(--danger)" }}>*</em></span>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="例如：代码审查" />
+          </label>
+          <label className="field">
+            <span>描述</span>
+            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="简要描述技能功能" />
+          </label>
+          <label className="field">
+            <span>触发条件</span>
+            <input value={whenToUse} onChange={e => setWhenToUse(e.target.value)} placeholder="例如：用户请求代码审查时" />
+          </label>
+          <label className="field">
+            <span>参数提示</span>
+            <input value={argHint} onChange={e => setArgHint(e.target.value)} placeholder="可选：${ARGUMENTS} 的说明" />
+          </label>
+          </div>
+        </div>
+
+        <button
+          className="primary-btn"
+          style={{
+            width: "100%", minHeight: 44, fontSize: 14, marginBottom: 16,
+            background: generating ? "var(--muted)" : "linear-gradient(135deg, #2563eb, #7c3aed)",
+            border: "none", color: "#fff", fontWeight: 600,
+            borderRadius: "var(--radius-md)", cursor: generating ? "not-allowed" : "pointer",
+            opacity: generating ? 0.7 : 1,
+          }}
+          onClick={handleGenerate}
+          disabled={generating || !name.trim()}
+        >
+          {generating ? "⏳ 正在调用本地 LLM 生成..." : "✨ 自动生成 SKILL.md"}
+        </button>        {genError && (
+          <div style={{
+            padding: "10px 14px", borderRadius: "var(--radius-sm)",
+            background: "#fff5f5", color: "#c53030",
+            fontSize: 12, marginBottom: 12, border: "1px solid #fed7d7",
+            lineHeight: 1.5, wordBreak: "break-all",
+          }}>{genError}</div>
+        )}
+
+        {genContent && (
+          <div style={{
+            background: "var(--surface-soft)", borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--line)", padding: "16px 18px", marginBottom: 16,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>SKILL.md 预览（可编辑）</span>
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>{genContent.split("\n").length} 行</span>
+            </div>
+            <textarea
+              value={genContent}
+              onChange={e => setGenContent(e.target.value)}
+              rows={16}
+              style={{
+                width: "100%", fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+                fontSize: 11, resize: "vertical", lineHeight: 1.6,
+                border: "1px solid var(--line)", borderRadius: "var(--radius-sm)",
+                padding: "10px 12px", background: "var(--surface)", color: "var(--ink)",
+              }}
+            />
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+          <button className="outline-btn" onClick={onClose}>取消</button>
+          <button
+            className="primary-btn"
+            onClick={handleSave}
+            disabled={saving || !genContent.trim()}
+          >{saving ? "保存中..." : "保存技能"}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ========== EditSkillModal ==========
+function EditSkillModal({ skill, onClose, onSaved }: { skill: Skill; onClose: () => void; onSaved: () => void }) {
+  const [ename, setEname] = useState(skill.name || "")
+  const [edesc, setEdesc] = useState(skill.description || "")
+  const [ewhen, setEwhen] = useState(skill.whenToUse || "")
+  const [eargHint, setEargHint] = useState(skill.argumentHint || "")
+  const [ebody, setEbody] = useState(skill.body || "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleSave = async () => {
+    if (!ename.trim()) { setError("技能名称不能为空"); return }
+    setSaving(true)
+    setError("")
+    try {
+      let fm = "---\r\n"
+      fm += "name: " + ename.trim() + "\r\n"
+      if (edesc.trim()) fm += "description: " + edesc.trim() + "\r\n"
+      if (ewhen.trim()) fm += "whenToUse: " + ewhen.trim() + "\r\n"
+      if (eargHint.trim()) fm += "argumentHint: " + eargHint.trim() + "\r\n"
+      fm += "allowedTools:\r\n  - Read\r\n  - Write\r\n"
+      fm += "---\r\n\r\n"
+      const fullContent = fm + ebody.trim()
+      await window.llamaDesktop.createSkill({ name: skill.dirName, content: fullContent })
+      onSaved()
+    } catch (e) {
+      setError("保存失败: " + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 100001,
+      background: "rgba(0,0,0,0.4)", display: "flex",
+      alignItems: "center", justifyContent: "center",
+    }} onClick={onClose}>
+      <div style={{
+        background: "var(--surface)", borderRadius: "var(--radius-lg)",
+        padding: 24, width: 620, maxHeight: "88vh", overflow: "auto",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h3 style={{ margin: 0, fontSize: 17 }}>修改技能</h3>
+          <button className="icon-btn" onClick={onClose} style={{ fontSize: 16 }}>✕</button>
+        </div>
+
+        <div style={{
+          background: "var(--surface-soft)", borderRadius: "var(--radius-lg)",
+          padding: "16px 18px", marginBottom: 16,
+          border: "1px solid var(--line)",
+        }}>
+          <div className="form-grid single">
+            <label className="field">
+              <span>技能名称 <em style={{ color: "var(--danger)", fontStyle: "normal" }}>*</em></span>
+              <input value={ename} onChange={e => setEname(e.target.value)} placeholder="例如：代码审查" />
+            </label>
+            <label className="field">
+              <span>描述</span>
+              <input value={edesc} onChange={e => setEdesc(e.target.value)} placeholder="简要描述技能功能" />
+            </label>
+            <label className="field">
+              <span>触发条件</span>
+              <input value={ewhen} onChange={e => setEwhen(e.target.value)} placeholder="例如：用户请求代码审查时" />
+            </label>
+            <label className="field">
+              <span>参数提示</span>
+              <input value={eargHint} onChange={e => setEargHint(e.target.value)} placeholder="可选：${ARGUMENTS} 的说明" />
+            </label>
+          </div>
+        </div>
+
+        <div style={{
+          background: "var(--surface-soft)", borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--line)", padding: "16px 18px", marginBottom: 16,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>技能主体（系统提示词）</span>
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>{ebody.split("\n").length} 行</span>
+          </div>
+          <textarea
+            value={ebody}
+            onChange={e => setEbody(e.target.value)}
+            rows={14}
+            style={{
+              width: "100%", fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+              fontSize: 11, resize: "vertical", lineHeight: 1.6,
+              border: "1px solid var(--line)", borderRadius: "var(--radius-sm)",
+              padding: "10px 12px", background: "var(--surface)", color: "var(--ink)",
+            }}
+          />
+        </div>
+
+        {error && (
+          <div style={{
+            padding: "10px 14px", borderRadius: "var(--radius-sm)",
+            background: "#fff5f5", color: "#c53030",
+            fontSize: 12, marginBottom: 12, border: "1px solid #fed7d7",
+            lineHeight: 1.5, wordBreak: "break-all",
+          }}>{error}</div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+          <button className="outline-btn" onClick={onClose}>取消</button>
+          <button
+            className="primary-btn"
+            onClick={handleSave}
+            disabled={saving || !ename.trim()}
+          >{saving ? "保存中..." : "保存"}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function SettingsPanel({
   settingsOpen,
@@ -242,6 +508,115 @@ export function SettingsPanel({
             ))}
           </div>
         )
+
+      case 'skills': {
+        const [skillsList, setSkillsList] = useState<Skill[]>([])
+        const [skillsLoaded, setSkillsLoaded] = useState(false)
+        const [deleting, setDeleting] = useState<string | null>(null)
+        const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
+        const [showNewSkillModal, setShowNewSkillModal] = useState(false)
+
+        const loadSkills = () => {
+          window.llamaDesktop.listSkills().then(list => {
+            setSkillsList(list)
+            setSkillsLoaded(true)
+          }).catch(() => setSkillsLoaded(true))
+        }
+
+        useEffect(() => {
+          if (!skillsLoaded) loadSkills()
+        }, [skillsLoaded])
+
+        const handleDelete = async (dirName: string, skillName: string) => {
+          if (!window.confirm(`确定删除技能 "${skillName}" 吗？此操作不可恢复。`)) return
+          setDeleting(dirName)
+          try {
+            await window.llamaDesktop.deleteSkill({ name: dirName })
+            setSkillsList(prev => prev.filter(s => s.dirName !== dirName))
+          } catch (e) {
+            window.alert('删除失败: ' + (e instanceof Error ? e.message : String(e)))
+          } finally {
+            setDeleting(null)
+          }
+        }
+
+        const handleEdit = async (dirName: string) => {
+          try {
+            const skill = await window.llamaDesktop.readSkill({ name: dirName })
+            setEditingSkill(skill)
+          } catch (e) {
+            window.alert('读取技能失败: ' + (e instanceof Error ? e.message : String(e)))
+          }
+        }
+
+        return (
+          <div className="settings-stack">
+            {settingsCard('技能管理', '新建、修改和删除自定义技能提示词', (
+              <div>
+                {!skillsLoaded ? (
+                  <div className="empty-log">加载中...</div>
+                ) : skillsList.length === 0 ? (
+                  <div className="empty-log" style={{ padding: '24px 0', textAlign: 'center' }}>还没有技能，点击下方"新建技能"创建第一个。</div>
+                ) : (
+                  <div className="settings-stack">
+                    {skillsList.map((skill) => (
+                      <div key={skill.dirName} className="settings-card" style={{
+                        border: '1px solid var(--line)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '14px 16px',
+                        background: 'var(--surface)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: 12,
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <strong style={{ fontSize: 14, color: 'var(--ink)' }}>{skill.name}</strong>
+                          <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 0', lineHeight: 1.5 }}>{skill.description}</p>
+                          {skill.whenToUse && (
+                            <p style={{ fontSize: 11, color: 'var(--muted)', margin: '4px 0 0', opacity: 0.7 }}>触发: {skill.whenToUse}</p>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                          <button
+                            className="outline-btn"
+                            style={{ minHeight: 32, fontSize: 12, padding: '0 12px' }}
+                            onClick={() => handleEdit(skill.dirName)}
+                          >修改</button>
+                          <button
+                            className="danger-btn"
+                            style={{ minHeight: 32, fontSize: 12, padding: '0 12px' }}
+                            onClick={() => handleDelete(skill.dirName, skill.name)}
+                            disabled={deleting === skill.dirName}
+                          >{deleting === skill.dirName ? '删除中...' : '删除'}</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      className="primary-btn"
+                      style={{ width: '100%', minHeight: 40, fontSize: 13, marginTop: 4 }}
+                      onClick={() => setShowNewSkillModal(true)}
+                    >+ 新建技能</button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+                        {/* 新建技能弹窗 */}
+            {showNewSkillModal && <NewSkillModal
+              onClose={() => setShowNewSkillModal(false)}
+              onSaved={() => { setShowNewSkillModal(false); setSkillsLoaded(false); }}
+            />}
+
+            {/* 编辑技能弹窗 */}
+            {editingSkill && <EditSkillModal
+              skill={editingSkill}
+              onClose={() => setEditingSkill(null)}
+              onSaved={() => { setEditingSkill(null); setSkillsLoaded(false); }}
+            />}
+          </div>
+        )
+      }
 
       case 'sampling':
         return (

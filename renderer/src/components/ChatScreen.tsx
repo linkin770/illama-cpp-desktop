@@ -1,4 +1,4 @@
-// 聊天屏幕组件 - 展示消息列表和输入区域
+﻿// 聊天屏幕组件 - 展示消息列表和输入区域
 import { useRef, useState, useCallback, useEffect, useMemo, memo } from 'react'
 import type { ChatMessage, Attachment } from '../types'
 import { Bubble } from '@ant-design/x'
@@ -20,6 +20,7 @@ interface ChatScreenProps {
   onSend: (content: string) => void
   onAbort: () => void
   onPickAttachment: (kind: string) => void
+  onPickSkill: (skill: Skill) => void
   onRemoveAttachment: (index: number) => void
   onOpenModelInfo: () => void
   onCopyMessage: (index: number) => void
@@ -102,6 +103,7 @@ export function ChatScreen({
   onSend,
   onAbort,
   onPickAttachment,
+  onPickSkill,
   onRemoveAttachment,
   onOpenModelInfo,
   onCopyMessage,
@@ -248,6 +250,7 @@ export function ChatScreen({
           onInputChange={onInputChange}
           onSend={onSend}
           onAbort={onAbort}
+          onPickSkill={onPickSkill}
           onPickAttachment={onPickAttachment}
           onRemoveAttachment={onRemoveAttachment}
           onOpenModelInfo={onOpenModelInfo}
@@ -293,6 +296,7 @@ export function ChatScreen({
         onInputChange={onInputChange}
         onSend={onSend}
         onAbort={onAbort}
+        onPickSkill={onPickSkill}
         onPickAttachment={onPickAttachment}
         onRemoveAttachment={onRemoveAttachment}
         onOpenModelInfo={onOpenModelInfo}

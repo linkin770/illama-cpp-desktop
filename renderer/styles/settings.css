@@ -1,7 +1,7 @@
 .settings-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 99998;
   background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(2px);
   opacity: 0;
@@ -19,7 +19,7 @@
   top: 54px;
   left: 50%;
   bottom: 32px;
-  z-index: 60;
+  z-index: 99999;
   width: min(1180px, calc(100vw - 140px));
   min-width: 820px;
   border: 1px solid var(--line);

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+﻿const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('llamaDesktop', {
   getState: () => ipcRenderer.invoke('llama:get-state'),
@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   revealPath: filePath => ipcRenderer.invoke('llama:reveal-path', { filePath }),
   openUrl: url => ipcRenderer.invoke('llama:open-url', { url }),
   saveFile: payload => ipcRenderer.invoke('llama:save-file', payload),
+  listSkills: () => ipcRenderer.invoke("llama:skill-list"),
+  createSkill: payload => ipcRenderer.invoke("llama:skill-create", payload),
+  generateSkillContent: payload => ipcRenderer.invoke("llama:skill-generate", payload),
+  readSkill: payload => ipcRenderer.invoke("llama:skill-read", payload),
+  deleteSkill: payload => ipcRenderer.invoke("llama:skill-delete", payload),
   onEvent: callback => {
     const handler = (_event, payload) => callback(payload)
     ipcRenderer.on('llama:event', handler)

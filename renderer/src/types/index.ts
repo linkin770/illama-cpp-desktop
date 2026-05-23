@@ -20,6 +20,12 @@ export interface LlamaDesktopAPI {
   abortChat(): Promise<void>
   // 获取应用状态
   getState(): Promise<{ config?: Config; validation?: Validation; status?: Status; logs?: LogEntry[]; launch?: Record<string, unknown> }>
+  // 技能管理
+  listSkills(): Promise<Skill[]>
+  createSkill(payload: { name: string; content: string }): Promise<{ ok: boolean; name: string }>
+  generateSkillContent(payload: { name: string; description?: string; whenToUse?: string; argumentHint?: string }): Promise<{ ok: boolean; content: string }>
+  readSkill(payload: { name: string }): Promise<Skill & { raw: string }>
+  deleteSkill(payload: { name: string }): Promise<{ ok: boolean }>
   // 监听来自主进程的事件
   onEvent(handler: (payload: unknown) => void): () => void
 }
@@ -105,6 +111,19 @@ export interface LogEntry {
   line: string // 日志内容
 }
 
+// Skill 类型
+export interface Skill {
+  dirName: string
+  filePath: string
+  raw?: string
+  name: string
+  description: string
+  whenToUse?: string
+  argumentHint?: string
+  allowedTools?: string[]
+  body: string
+}
+
 // 附件类型
 export interface Attachment {
   kind: 'image' | 'audio' | 'text' | 'pdf' | 'system' | 'mcp' | 'file' // 附件类型
@@ -186,4 +205,4 @@ export interface AppState {
 }
 
 // 设置面板分区 ID 类型
-export type SettingsSectionId = 'overview' | 'display' | 'sampling' | 'mcp' | 'developer' | 'logs'
+export type SettingsSectionId = 'overview' | 'display' | 'skills' | 'sampling' | 'mcp' | 'developer' | 'logs'
