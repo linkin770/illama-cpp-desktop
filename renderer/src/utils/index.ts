@@ -103,12 +103,23 @@ export function paramScaleFromName(name: string): string {
   return ''
 }
 
-// 预估文本的 token 数（粗略估计：每 4 字符约 1 token）
+// 预估文本的 token 数（中文约 1.5 字符/token，英文约 4 字符/token）
 export function estimateTokens(text: string): number {
-  return Math.floor(String(text).length / 4)
+  const s = String(text)
+  let cjk = 0
+  let other = 0
+  for (const ch of s) {
+    const code = ch.charCodeAt(0)
+    if ((code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x20000 && code <= 0x2A6DF) || (code >= 0xF900 && code <= 0xFAFF)) {
+      cjk++
+    } else {
+      other++
+    }
+  }
+  return Math.max(1, Math.floor(cjk / 1.5 + other / 4))
 }
 
-// 分割思考过程和回答内容（【思考】格式）
+
 export function splitThinkingOutput(content: string): { answer: string; thoughts: string[] } {
   const thoughtPattern = /【([^】]+)】/g
   const thoughts: string[] = []

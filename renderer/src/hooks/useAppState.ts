@@ -120,7 +120,6 @@ export function useAppState() {
         updatedSessions = [next, ...prev.sessions]
       }
       
-      updatedSessions.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
       persistSessions(updatedSessions)
       
       return { ...prev, sessions: updatedSessions }

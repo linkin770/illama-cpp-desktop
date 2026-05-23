@@ -1,24 +1,19 @@
-# dependencies
-node_modules/
+# dependencies — keep folder, ignore contents
+node_modules/*
+!node_modules/.gitkeep
 
-# build output
-dist/
-out/
-release/
-*.exe
-*.msi
-*.zip
-*.7z
-*.blockmap
-builder-debug.yml
+# build output — uploaded with project
 
 # local runtime state
 desktop-state.json
 *.log
 logs/
 
-# llama.cpp / model files
-llama/
+# llama.cpp — keep folder, ignore contents
+llama/*
+!llama/.gitkeep
+
+# model files
 models/
 *.gguf
 *.ggml
@@ -28,12 +23,12 @@ models/
 *.pth
 *.onnx
 
+# ccx — not related to project
+ccx/
+*.ccx
+
 # OS / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
-
-# ccx backend
-ccx/

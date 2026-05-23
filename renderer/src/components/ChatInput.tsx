@@ -55,17 +55,17 @@ export function ChatInput({
   }, [])
 
   const handleSkillButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
     e.stopPropagation()
+    if (skillMenuOpen) { setSkillMenuOpen(false); return }
     const rect = e.currentTarget.getBoundingClientRect()
     const left = Math.min(Math.max(rect.left, 12), window.innerWidth - 236 - 12)
     const bottom = window.innerHeight - rect.top + 6
     setSkillMenuPosition({ left: Math.round(left), bottom: Math.round(bottom) })
     setSkillMenuOpen(true)
-    if (!skillsLoading) {
-      setSkillsLoading(true)
-      try { const list = await window.llamaDesktop.listSkills(); setSkillMenuSkills(list) } catch (_) {}
-      setSkillsLoading(false)
-    }
+    setSkillsLoading(true)
+    try { const list = await window.llamaDesktop.listSkills(); setSkillMenuSkills(list) } catch (_) { setSkillMenuSkills([]) }
+    setSkillsLoading(false)
   }
 
   const handleAttachButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
