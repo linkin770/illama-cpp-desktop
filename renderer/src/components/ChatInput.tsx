@@ -15,6 +15,8 @@ interface ChatInputProps {
   onPickAttachment: (kind: string) => void
   onRemoveAttachment: (index: number) => void
   onPickSkill: (skill: Skill) => void
+  selectedSkill: Skill | null
+  onRemoveSkill: () => void
   onOpenModelInfo: () => void
 }
 
@@ -29,6 +31,8 @@ export function ChatInput({
   onPickAttachment,
   onRemoveAttachment,
   onPickSkill,
+  selectedSkill,
+  onRemoveSkill,
   onOpenModelInfo,
 }: ChatInputProps) {
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
@@ -41,8 +45,9 @@ export function ChatInput({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (!target.closest('.attach-wrap') && !target.closest('.attach-menu')) {
+      if (!target.closest('.attach-wrap') && !target.closest('.skill-wrap') && !target.closest('.attach-menu')) {
         setAttachmentMenuOpen(false)
+        setSkillMenuOpen(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
@@ -90,7 +95,22 @@ export function ChatInput({
 
     return (
     <div className="composer-wrap">
-      {attachments.length > 0 && (
+      {selectedSkill && (
+        <div className="attachment-row">
+          <span className="attachment-chip skill-chip" title={selectedSkill.name}>
+            <strong>{"🔧 " + selectedSkill.name}</strong>
+            <button
+              type="button"
+              className="attachment-remove"
+              onClick={onRemoveSkill}
+              title="移除技能"
+            >
+              {"\u00D7"}
+            </button>
+          </span>
+        </div>
+      )}
+            {attachments.length > 0 && (
         <div className="attachment-row">
           {attachments.map((attachment, index) => (
             <span key={index} className="attachment-chip" title={attachment.name}>

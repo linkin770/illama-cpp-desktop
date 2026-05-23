@@ -1,6 +1,6 @@
 ﻿// 聊天屏幕组件 - 展示消息列表和输入区域
 import { useRef, useState, useCallback, useEffect, useMemo, memo } from 'react'
-import type { ChatMessage, Attachment } from '../types'
+import type { ChatMessage, Attachment, Skill } from '../types'
 import { Bubble } from '@ant-design/x'
 import {
   renderMessageContent,
@@ -21,6 +21,8 @@ interface ChatScreenProps {
   onAbort: () => void
   onPickAttachment: (kind: string) => void
   onPickSkill: (skill: Skill) => void
+  selectedSkill: Skill | null
+  onRemoveSkill: () => void
   onRemoveAttachment: (index: number) => void
   onOpenModelInfo: () => void
   onCopyMessage: (index: number) => void
@@ -104,6 +106,8 @@ export function ChatScreen({
   onAbort,
   onPickAttachment,
   onPickSkill,
+  selectedSkill,
+  onRemoveSkill,
   onRemoveAttachment,
   onOpenModelInfo,
   onCopyMessage,
@@ -251,6 +255,8 @@ export function ChatScreen({
           onSend={onSend}
           onAbort={onAbort}
           onPickSkill={onPickSkill}
+          selectedSkill={selectedSkill}
+          onRemoveSkill={onRemoveSkill}
           onPickAttachment={onPickAttachment}
           onRemoveAttachment={onRemoveAttachment}
           onOpenModelInfo={onOpenModelInfo}
@@ -297,6 +303,8 @@ export function ChatScreen({
         onSend={onSend}
         onAbort={onAbort}
         onPickSkill={onPickSkill}
+        selectedSkill={selectedSkill}
+        onRemoveSkill={onRemoveSkill}
         onPickAttachment={onPickAttachment}
         onRemoveAttachment={onRemoveAttachment}
         onOpenModelInfo={onOpenModelInfo}

@@ -1083,3 +1083,6 @@ body:has(.app-shell.sidebar-collapsed) .drag-region {
 .skill-menu.floating { width: 236px; }
 .skill-menu button { min-height: 52px; height: auto; padding: 6px 12px; display: flex; align-items: center; }
 .skill-menu button strong { line-height: 1.3; }
+
+.skill-chip { border-color: #7c3aed !important; background: #f5f3ff !important; }
+.skill-chip strong { color: #7c3aed !important; }

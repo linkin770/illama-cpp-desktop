@@ -12,7 +12,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ModelInfoModal } from './components/ModelInfoModal';
 import { Toast } from './components/Toast';
 import { ChatNav } from './components/ChatNav';
-import type { ChatMessage } from './types';
+import type { ChatMessage, Skill } from './types';
 import { friendlyErrorMessage, estimateTokens } from './utils';
 import { themeConfig } from './theme';
 
@@ -48,7 +48,8 @@ function App() {
   } = useAppState();
 
   const [renameState, setRenameState] = useState<{ open: boolean; sessionId: string; title: string; value: string } | null>(null)
-  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null)
+  const [sessionSkills, setSessionSkills] = useState<Record<string, Skill | null>>({})
+  const selectedSkill = sessionSkills[state.currentSessionId] || null
 
   const currentTheme = useMemo(() => ({
     ...themeConfig,
@@ -149,7 +150,9 @@ function App() {
     }
   }, [state.config, setModelInfoOpen, setModelInfo]);
 
-  const pickSkill = useCallback((skill: Skill) => { setSelectedSkill(skill) }, [])
+  const pickSkill = useCallback((skill: Skill) => { setSessionSkills(prev => ({ ...prev, [state.currentSessionId]: skill })) }, [state.currentSessionId])
+  const removeSkill = useCallback(() => { setSessionSkills(prev => ({ ...prev, [state.currentSessionId]: null })) }, [state.currentSessionId])
+
 
 
   // 选择附件（图片、PDF、文件等）
@@ -199,6 +202,21 @@ function App() {
     }
     setChatBusy(true);
     const attachments = state.attachments;
+    // 技能注入：如果选择了技能，将 SKILL.md 主体作为 system 消息
+    const skill = selectedSkill;
+    let systemMessage: ChatMessage | null = null;
+    if (skill && skill.body) {
+      let body = skill.body;
+      if (body.includes('${ARGUMENTS}')) {
+        body = body.replace(/$\{ARGUMENTS\}/g, content || '');
+      }
+      systemMessage = {
+        role: 'system',
+        content: body,
+        createdAt: Date.now(),
+        localOnly: true,
+      };
+    }
     // 创建用户消息
     const userMessage: ChatMessage = {
       role: 'user',
@@ -221,7 +239,7 @@ function App() {
       speed: '',
       streaming: true,
     };
-    const allMessages = [...state.chatMessages, userMessage, assistantMessage];
+    const allMessages = systemMessage ? [systemMessage, ...state.chatMessages, userMessage, assistantMessage] : [...state.chatMessages, userMessage, assistantMessage];
     // 添加消息到列表
     addChatMessage(userMessage);
     addChatMessage(assistantMessage);
@@ -268,7 +286,7 @@ function App() {
       setChatBusy(false);
       setStreamRequestId('');
     }
-  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
+  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, selectedSkill, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
 
   // 中止当前聊天
   const abortChat = useCallback(async () => {
@@ -343,7 +361,8 @@ function App() {
       variants: existingVariants,
       currentVariantIndex: existingVariants.length,
     };
-    const allMessages = [...truncatedMessages, assistantMessage];
+    const skillSystemMsg = selectedSkill && selectedSkill.body ? { role: 'system' as const, content: selectedSkill.body.replace(/\$\{ARGUMENTS\}/g, userMessage.content || ''), createdAt: Date.now(), localOnly: true } as ChatMessage : null;
+    const allMessages = skillSystemMsg ? [skillSystemMsg, ...truncatedMessages, assistantMessage] : [...truncatedMessages, assistantMessage];
     setChatMessages(truncatedMessages);
     addChatMessage(assistantMessage);
     setStreamRequestId(requestId);
@@ -567,6 +586,8 @@ function App() {
   }, []);
 
   // 同步最新的流式请求 ID 和消息列表到 ref
+
+
   useEffect(() => {
     streamRequestIdRef.current = state.streamRequestId;
     chatMessagesRef.current = state.chatMessages;
@@ -661,7 +682,7 @@ function App() {
       <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
 
       <main className="main-area">
-        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>)}
+        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>)}
         <ServiceBar status={state.status} busy={state.busy} dirty={state.dirty} onSave={save} onHealth={health} onStart={start} onStop={stop}/>
       </main>
 
