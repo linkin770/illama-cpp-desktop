@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { CopyOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CodeOutlined, TagOutlined, ClockCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { CopyOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CodeOutlined, TagOutlined, ClockCircleOutlined, PlayCircleOutlined, FileImageOutlined, FileTextOutlined } from '@ant-design/icons'
 import { XMarkdown } from '@ant-design/x-markdown'
 import { CodeHighlighter } from '@ant-design/x'
 import { Tooltip } from 'antd'
@@ -18,7 +18,21 @@ export function renderMessageContent(
   }
 
   if (message.role !== 'assistant') {
-    return content ? <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span> : null
+    return (
+      <div>
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="message-attachments">
+            {message.attachments.map((att, i) => (
+              <span key={i} className="message-attachment-chip">
+                {att.kind === 'image' ? <FileImageOutlined /> : <FileTextOutlined />}
+                <span className="message-attachment-name">{att.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {content ? <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span> : null}
+      </div>
+    )
   }
 
   // 流式输出时使用普通 span 显示，避免频繁的 Markdown 解析

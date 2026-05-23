@@ -89,7 +89,8 @@ export function SettingsPanel({
                 placeholder={options.hint}
                 readOnly
               />
-              <button className="icon-btn text-btn" type="button" onClick={() => onPickFile(String(key), options.pick!)}>选择</button>
+              <button className={value ? "danger-btn" : "muted-btn"} type="button" disabled={!value} onClick={() => onUpdateConfig(key, '')}>清除</button>
+              <button className="text-btn" type="button" onClick={() => onPickFile(String(key), options.pick!)}>选择</button>
             </>
           ) : (
             <input

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FileImageOutlined, FileTextOutlined } from '@ant-design/icons'
 import { Sender } from '@ant-design/x'
 import type { Attachment } from '../types'
 import { escapeHtml, modelName } from '../utils'
@@ -46,15 +47,11 @@ export function ChatInput({
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
     const menuWidth = 206
-    const menuHeight = 252
+    const menuHeight = 120
     const gap = 8
     const minPad = 12
     const left = Math.min(Math.max(rect.left, minPad), window.innerWidth - menuWidth - minPad)
-    const below = rect.bottom + gap
-    const above = rect.top - menuHeight - gap
-    const top = below + menuHeight < window.innerHeight - minPad
-      ? below
-      : Math.max(minPad, above)
+    const top = Math.max(minPad, rect.top - menuHeight - gap)
 
     setAttachmentMenuPosition({ left: Math.round(left), top: Math.round(top) })
     setAttachmentMenuOpen(true)
@@ -135,24 +132,16 @@ export function ChatInput({
         <>
           <div className="attach-menu-backdrop" onClick={() => setAttachmentMenuOpen(false)} />
           <div
-            className="attach-menu floating"
+            className="attach-menu floating slide-up"
             style={{ left: attachmentMenuPosition.left, top: attachmentMenuPosition.top }}
           >
             <button type="button" onClick={() => { onPickAttachment('image'); setAttachmentMenuOpen(false) }}>
-              <span>{'\uD83D\uDDBC'}</span>
+              <FileImageOutlined />
               <span>图片</span>
             </button>
             <button type="button" onClick={() => { onPickAttachment('text'); setAttachmentMenuOpen(false) }}>
-              <span>{'\uD83D\uDCC4'}</span>
+              <FileTextOutlined />
               <span>文本文件</span>
-            </button>
-            <button type="button" onClick={() => { onPickAttachment('pdf'); setAttachmentMenuOpen(false) }}>
-              <span>{'\uD83D\uDCD5'}</span>
-              <span>PDF 文件</span>
-            </button>
-            <button type="button" onClick={() => { onPickAttachment('file'); setAttachmentMenuOpen(false) }}>
-              <span>{'\uD83D\uDCC1'}</span>
-              <span>其他文件</span>
             </button>
           </div>
         </>

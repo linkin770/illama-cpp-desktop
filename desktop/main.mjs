@@ -1888,11 +1888,8 @@ function registerIpc() {
     const filters = kind === 'image'
       ? [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'] }]
       : kind === 'text'
-      ? [{ name: 'Text', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'c', 'cpp', 'h', 'rs', 'go'] },
-         { name: 'Documents', extensions: ['docx', 'doc', 'xlsx', 'xls', 'xlsb', 'pdf'] }]
-      : kind === 'pdf'
-      ? [{ name: 'PDF', extensions: ['pdf'] }]
-      : [{ name: 'All Files', extensions: ['*'] }];
+      ? [{ name: '支持的文件', extensions: ['txt', 'md', 'json', 'toml', 'yaml', 'yml', 'csv', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'c', 'cpp', 'h', 'rs', 'go', 'docx', 'doc', 'xlsx', 'xls', 'xlsb', 'pdf'] }]
+      : [{ name: '所有文件', extensions: ['*'] }];
 
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile', 'multiSelections'],

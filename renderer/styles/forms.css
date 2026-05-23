@@ -25,9 +25,38 @@
 }
 
 .field-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.field-row input {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted-btn {
+  min-height: 40px;
+  border-radius: var(--radius-lg);
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.muted-btn:not(:disabled) {
+  cursor: pointer;
 }
 
 .field input,
