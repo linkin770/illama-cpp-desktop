@@ -606,7 +606,7 @@ function App() {
       else if (payload.type === 'logs') {
         patchFromBackend({ logs: payload.logs });
       }
-      else if (payload.type === 'chat-stream') {
+      else if (payload.type === 'chat-stream' || payload.type === 'chat-stream-done') {
         const currentRequestId = streamRequestIdRef.current;
         if (payload.requestId !== currentRequestId)
           return;

@@ -28,6 +28,19 @@ interface SidebarProps {
   onToggleSidebar: () => void
 }
 
+
+function getTimeGroup(ts: number): string {
+  const now = new Date();
+  const date = new Date(ts);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const lastWeek = new Date(today.getTime() - 7 * 86400000);
+  if (date >= today) return "今天";
+  if (date >= yesterday) return "昨天";
+  if (date >= lastWeek) return "上周";
+  return "更早";
+}
+
 export function Sidebar({
   sessions,
   currentSessionId,
@@ -66,6 +79,7 @@ export function Sidebar({
   const conversationItems = useMemo(() => {
     return filteredSessions.map(session => ({
       key: session.id,
+      group: getTimeGroup(session.updatedAt),
       label: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -154,6 +168,10 @@ export function Sidebar({
             menu={(item) => ({
               items: getMenuItems(String(item.key)),
             })}
+            groupable={{
+              collapsible: true,
+              defaultExpandedKeys: ['今天', '昨天', '上周', '更早'],
+            }}
             styles={{
               item: { padding: '8px 12px' },
             }}
