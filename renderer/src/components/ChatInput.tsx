@@ -14,6 +14,7 @@ interface ChatInputProps {
   onAbort: () => void
   onPickAttachment: (kind: string) => void
   onRemoveAttachment: (index: number) => void
+  onPickSkill: (skill: Skill) => void
   onOpenModelInfo: () => void
 }
 
@@ -27,10 +28,11 @@ export function ChatInput({
   onAbort,
   onPickAttachment,
   onRemoveAttachment,
+  onPickSkill,
   onOpenModelInfo,
 }: ChatInputProps) {
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
-  const [attachmentMenuPosition, setAttachmentMenuPosition] = useState<{ left: number; top: number } | null>(null)
+  const [attachmentMenuPosition, setAttachmentMenuPosition] = useState<{ left: number; bottom: number } | null>(null)
   const [skillMenuOpen, setSkillMenuOpen] = useState(false)
   const [skillMenuPosition, setSkillMenuPosition] = useState<{ left: number; bottom: number } | null>(null)
   const [skillMenuSkills, setSkillMenuSkills] = useState<Skill[]>([])
@@ -54,7 +56,7 @@ export function ChatInput({
     const bottom = window.innerHeight - rect.top + 6
     setSkillMenuPosition({ left: Math.round(left), bottom: Math.round(bottom) })
     setSkillMenuOpen(true)
-    if (skillMenuSkills.length === 0 && !skillsLoading) {
+    if (!skillsLoading) {
       setSkillsLoading(true)
       try { const list = await window.llamaDesktop.listSkills(); setSkillMenuSkills(list) } catch (_) {}
       setSkillsLoading(false)
@@ -64,14 +66,12 @@ export function ChatInput({
   const handleAttachButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
-    const menuWidth = 206
-    const menuHeight = 120
-    const gap = 8
+    const menuWidth = 236
+    const gap = 6
     const minPad = 12
     const left = Math.min(Math.max(rect.left, minPad), window.innerWidth - menuWidth - minPad)
-    const top = Math.max(minPad, rect.top - menuHeight - gap)
-
-    setAttachmentMenuPosition({ left: Math.round(left), top: Math.round(top) })
+    const bottom = window.innerHeight - rect.top + gap
+    setAttachmentMenuPosition({ left: Math.round(left), bottom: Math.round(bottom) })
     setAttachmentMenuOpen(true)
   }
 
@@ -154,7 +154,7 @@ export function ChatInput({
           <div className="attach-menu-backdrop" onClick={() => setAttachmentMenuOpen(false)} />
           <div
             className="attach-menu floating slide-up"
-            style={{ left: attachmentMenuPosition.left, top: attachmentMenuPosition.top }}
+            style={{ left: attachmentMenuPosition.left, bottom: attachmentMenuPosition.bottom }}
           >
             <button type="button" onClick={() => { onPickAttachment('image'); setAttachmentMenuOpen(false) }}>
               <FileImageOutlined />
