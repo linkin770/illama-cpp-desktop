@@ -28,6 +28,14 @@ export interface LlamaDesktopAPI {
   deleteSkill(payload: { name: string }): Promise<{ ok: boolean }>
   // 监听来自主进程的事件
   onEvent(handler: (payload: unknown) => void): () => void
+  // 设置主题
+  setTheme(isDark: boolean): Promise<void>
+  // 非流式对话补全
+  chatCompletion(payload: { config: Record<string, unknown> | null; messages: Array<{ role: string; content: string }> }): Promise<unknown>
+  // 在文件管理器中显示路径
+  revealPath(filePath: string): Promise<void>
+  // 保存文件
+  saveFile(payload: Record<string, unknown>): Promise<unknown>
 }
 
 // 全局类型声明 - 将 llamaDesktop API 挂载到 window 对象
@@ -201,7 +209,6 @@ export interface AppState {
   settingsOpen: boolean // 设置面板是否打开
   toast: string // Toast 提示消息
   stickToBottom: boolean // 是否自动滚动到底部
-  isDraggingScrollbar: boolean // 是否正在拖动滚动条
 }
 
 // 设置面板分区 ID 类型

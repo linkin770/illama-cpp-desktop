@@ -1980,11 +1980,6 @@ function registerIpc() {
     return r.filePaths[0];
   })
 
-ipcMain.handle('llama:open-url', async (_event, url) => {
-    await shell.openExternal(url)
-    return { ok: true }
-  })
-
   /**
    * 退出应用
    */
@@ -1992,7 +1987,8 @@ ipcMain.handle('llama:open-url', async (_event, url) => {
     appIsQuitting = true
     app.quit()
     return { ok: true }
-  })
+  })
+
   // ============ Skill Management ============
 
   const skillsDir = path.join(rootDir, 'skills')

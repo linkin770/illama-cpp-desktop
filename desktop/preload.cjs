@@ -13,8 +13,6 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   getModelInfo: payload => ipcRenderer.invoke('llama:get-model-info', payload),
   pickFile: options => ipcRenderer.invoke('llama:pick-file', options),
   pickAttachments: payload => ipcRenderer.invoke('llama:pick-attachments', payload),
-  revealPath: filePath => ipcRenderer.invoke('llama:reveal-path', { filePath }),
-  openUrl: url => ipcRenderer.invoke('llama:open-url', { url }),
   saveFile: payload => ipcRenderer.invoke('llama:save-file', payload),
   listSkills: () => ipcRenderer.invoke("llama:skill-list"),
   createSkill: payload => ipcRenderer.invoke("llama:skill-create", payload),

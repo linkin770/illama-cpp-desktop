@@ -33,7 +33,6 @@ const defaultState: AppState = {
   settingsOpen: false,
   toast: '',
   stickToBottom: true,
-  isDraggingScrollbar: false,
 }
 
 // localStorage 会话存储的键名
