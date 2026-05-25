@@ -534,7 +534,7 @@
 }
 
 .dark-mode .terminal-row strong {
-  color: #4ade80;
+  color: #9ca3af;
 }
 
 .dark-mode .terminal-row em {
@@ -867,13 +867,13 @@
 }
 
 .dark-mode .settings-button.primary {
-  background: #16a34a;
-  border-color: #16a34a;
+  background: #1a1d21;
+  border-color: #1a1d21;
   color: #ffffff;
 }
 
 .dark-mode .settings-button.primary:hover {
-  background: #15803d;
+  background: #15171a;
 }
 
 .dark-mode .settings-button.danger {
@@ -999,9 +999,9 @@
 }
 
 .dark-mode .pill.good {
-  background: #052e16;
-  border-color: #166534;
-  color: #4ade80;
+  background: #1a1d21;
+  border-color: #374151;
+  color: #9ca3af;
 }
 
 .dark-mode .pill.warn {

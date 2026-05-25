@@ -15,6 +15,7 @@ const defaultState: AppState = {
   sidebarCollapsed: false,
   sessions: [],
   currentSessionId: '',
+  openTabs: [],
   historySearch: '',
   historyMenuId: '',
   historyDialog: null,
@@ -67,11 +68,15 @@ function titleFromMessages(messages: ChatMessage[]): string {
 // 应用状态 Hook
 export function useAppState() {
   // 初始化状态，从 localStorage 加载会话历史
-  const [state, setState] = useState<AppState>(() => ({
-    ...defaultState,
-    sessions: loadSessions(),
-    currentSessionId: makeSessionId(),
-  }))
+  const [state, setState] = useState<AppState>(() => {
+    const initialId = makeSessionId()
+    return {
+      ...defaultState,
+      sessions: loadSessions(),
+      currentSessionId: initialId,
+      openTabs: [initialId],
+    }
+  })
 
   // Toast 定时器引用
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -125,21 +130,120 @@ export function useAppState() {
     })
   }, [])
 
-  // 打开历史会话
-  const openSession = useCallback((sessionId: string) => {
-    saveCurrentSession()
+  // 关闭标签页
+  const closeTab = useCallback((tabId: string) => {
     setState(prev => {
-      const session = prev.sessions.find(s => s.id === sessionId)
-      if (!session) return prev
+      // 1. 保存当前会话（如果和关闭的标签相同）
+      const now = Date.now()
+      let sessions = prev.sessions
+      if (prev.currentSessionId === tabId && prev.chatMessages.length > 0) {
+        const current: Session = {
+          id: prev.currentSessionId,
+          title: titleFromMessages(prev.chatMessages),
+          messages: prev.chatMessages,
+          updatedAt: now,
+        }
+        const idx = sessions.findIndex(s => s.id === prev.currentSessionId)
+        if (idx >= 0) {
+          sessions = [...sessions]
+          sessions.splice(idx, 1, current)
+        } else {
+          sessions = [current, ...sessions]
+        }
+      }
       
-      // 清理session中可能残留的streaming状态
-      const cleanedMessages = Array.isArray(session.messages) 
-        ? session.messages.map(msg => ({ ...msg, streaming: false }))
+      // 2. 移除标签
+      const openTabs = prev.openTabs.filter(id => id !== tabId)
+      
+      // 3. 如果没有标签了，创建新会话
+      if (openTabs.length === 0) {
+        const newId = makeSessionId()
+        persistSessions(sessions)
+        return {
+          ...prev,
+          sessions,
+          openTabs: [newId],
+          currentSessionId: newId,
+          chatMessages: [],
+          chatInput: '',
+          attachments: [],
+          attachmentMenuOpen: false,
+          historyMenuId: '',
+          chatBusy: false,
+          streamRequestId: '',
+        }
+      }
+      
+      // 4. 切换到相邻标签
+      const currentIdx = prev.openTabs.indexOf(tabId)
+      let nextActiveId = openTabs[Math.min(currentIdx, openTabs.length - 1)]
+      
+      // 加载目标会话消息
+      const targetSession = sessions.find(s => s.id === nextActiveId)
+      const messages = targetSession
+        ? targetSession.messages.map(msg => ({ ...msg, streaming: false }))
         : []
+      
+      persistSessions(sessions)
       
       return {
         ...prev,
-        currentSessionId: session.id,
+        sessions,
+        openTabs,
+        currentSessionId: nextActiveId,
+        chatMessages: messages,
+        chatInput: '',
+        attachments: [],
+        attachmentMenuOpen: false,
+        historyMenuId: '',
+        stickToBottom: true,
+        chatBusy: false,
+        streamRequestId: '',
+      }
+    })
+  }, [])
+
+  // 打开历史会话（自动加入标签栏）
+  const openSession = useCallback((sessionId: string) => {
+    setState(prev => {
+      // 1. 保存当前会话
+      const now = Date.now()
+      let sessions = prev.sessions
+      if (prev.currentSessionId && prev.chatMessages.length > 0) {
+        const current: Session = {
+          id: prev.currentSessionId,
+          title: titleFromMessages(prev.chatMessages),
+          messages: prev.chatMessages,
+          updatedAt: now,
+        }
+        const idx = sessions.findIndex(s => s.id === prev.currentSessionId)
+        if (idx >= 0) {
+          sessions = [...sessions]
+          sessions.splice(idx, 1, current)
+        } else {
+          sessions = [current, ...sessions]
+        }
+      }
+      
+      // 2. 确保目标在标签栏中
+      let openTabs = prev.openTabs
+      if (!openTabs.includes(sessionId)) {
+        openTabs = [...openTabs, sessionId]
+      }
+      
+      // 3. 加载目标会话消息
+      const session = sessions.find(s => s.id === sessionId)
+      const cleanedMessages = session
+        ? session.messages.map(msg => ({ ...msg, streaming: false }))
+        : []
+      
+      persistSessions(sessions)
+      
+      return {
+        ...prev,
+        sessions,
+        openTabs,
+        currentSessionId: sessionId,
         chatMessages: cleanedMessages,
         chatInput: '',
         attachments: [],
@@ -152,7 +256,7 @@ export function useAppState() {
         streamRequestId: '',
       }
     })
-  }, [saveCurrentSession])
+  }, [])
 
   // 开始新会话
   const startFreshSession = useCallback(() => {
@@ -176,6 +280,7 @@ export function useAppState() {
       return {
         ...prev,
         currentSessionId: newId,
+        openTabs: [...prev.openTabs, newId],
         chatMessages: [],
         chatInput: '',
         attachments: [],
@@ -205,20 +310,24 @@ export function useAppState() {
   const deleteSession = useCallback((sessionId: string) => {
     setState(prev => {
       const updatedSessions = prev.sessions.filter(s => s.id !== sessionId)
+      const openTabs = prev.openTabs.filter(id => id !== sessionId)
       persistSessions(updatedSessions)
       if (prev.currentSessionId === sessionId) {
-        const newId = makeSessionId()
+        const nextId = openTabs.length > 0 ? openTabs[Math.min(prev.openTabs.indexOf(sessionId), openTabs.length - 1)] : makeSessionId()
+        const nextSession = updatedSessions.find(s => s.id === nextId)
         return {
           ...prev,
           sessions: updatedSessions,
-          currentSessionId: newId,
-          chatMessages: [],
+          openTabs: openTabs.length > 0 ? openTabs : [nextId],
+          currentSessionId: nextId,
+          chatMessages: nextSession ? nextSession.messages.map(msg => ({ ...msg, streaming: false })) : [],
           chatInput: '',
           attachments: [],
           attachmentMenuOpen: false,
+          historyMenuId: '',
         }
       }
-      return { ...prev, sessions: updatedSessions }
+      return { ...prev, sessions: updatedSessions, openTabs }
     })
   }, [])
 
@@ -380,6 +489,7 @@ export function useAppState() {
     patchFromBackend,
     saveCurrentSession,
     openSession,
+    closeTab,
     startFreshSession,
     renameSession,
     deleteSession,

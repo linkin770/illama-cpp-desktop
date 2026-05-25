@@ -1,4 +1,4 @@
-﻿﻿// 主应用组件 - 整合所有功能模块
+// 主应用组件 - 整合所有功能模块
 import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import { XProvider } from '@ant-design/x';
 import zhCN from '@ant-design/x/locale/zh_CN';
@@ -6,7 +6,7 @@ import { theme as antdTheme, Modal, Input } from 'antd';
 import { useAppState } from './hooks/useAppState';
 import { ChatScreen } from './components/ChatScreen';
 import { Sidebar } from './components/Sidebar';
-import { ServiceBar } from './components/ServiceBar';
+import { TabBar } from './components/TabBar';
 import { TerminalPanel } from './components/TerminalPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ModelInfoModal } from './components/ModelInfoModal';
@@ -23,6 +23,7 @@ function App() {
     patchFromBackend,
     saveCurrentSession,
     openSession,
+    closeTab,
     startFreshSession,
     renameSession,
     deleteSession,
@@ -125,17 +126,6 @@ function App() {
       setBusy(false);
     }
   }, [setBusy, patchFromBackend, setToast]);
-
-  // 测试服务健康状态
-  const health = useCallback(async () => {
-    try {
-      const result = await window.llamaDesktop.testHealth({ config: state.config });
-      setToast(result.ok ? `端口正常：${result.url}` : `端口未响应：${result.message || result.url}`);
-    }
-    catch (error) {
-      setToast((error as Error).message || String(error));
-    }
-  }, [state.config, setToast]);
 
   // 打开模型信息面板
   const openModelInfo = useCallback(async () => {
@@ -679,11 +669,15 @@ function App() {
       </button>
     </div>
     <div className={`app-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}/>
+      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} busy={state.busy} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)} onSave={save} onStart={start} onStop={stop}/>
 
       <main className="main-area">
-        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (<ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>)}
-        <ServiceBar status={state.status} busy={state.busy} dirty={state.dirty} onSave={save} onHealth={health} onStart={start} onStop={stop}/>
+        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (
+          <>
+            <TabBar openTabs={state.openTabs} sessions={state.sessions} activeKey={state.currentSessionId} onChange={openSession} onClose={closeTab} onAdd={startFreshSession}/>
+            <ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>
+          </>
+        )}
       </main>
 
       <SettingsPanel settingsOpen={state.settingsOpen} active={state.active} config={state.config} validation={state.validation} status={state.status} logs={state.logs} dirty={state.dirty} launch={state.launch} onClose={() => setSettingsOpen(false)} onSelectSection={setActive} onUpdateConfig={updateConfig} onPickFile={pickFile} onCopyLaunchCommand={() => { const preview = (state.launch as Record<string, string>).preview; if (preview) { navigator.clipboard.writeText(preview); setToast('命令已复制'); } }}/>

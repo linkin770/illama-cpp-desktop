@@ -15,6 +15,7 @@ interface SidebarProps {
   chatMessages: unknown[]
   status: Status
   settingsOpen: boolean
+  busy: boolean
   onNewChat: () => void
   onFocusChat: () => void
   onShowTerminal: () => void
@@ -26,6 +27,9 @@ interface SidebarProps {
   onDeleteSession: (sessionId: string) => void
   onToggleSettings: () => void
   onToggleSidebar: () => void
+  onSave: () => void
+  onStart: () => void
+  onStop: () => void
 }
 
 
@@ -51,6 +55,7 @@ export function Sidebar({
   chatMessages,
   status,
   settingsOpen,
+  busy,
   onNewChat,
   onFocusChat,
   onShowTerminal,
@@ -61,6 +66,9 @@ export function Sidebar({
   onExportSession,
   onDeleteSession,
   onToggleSettings,
+  onSave,
+  onStart,
+  onStop,
 }: SidebarProps) {
   const filteredSessions = sessions
     .filter(session => !historySearch || String(session.title || '').toLowerCase().includes(historySearch.toLowerCase()))
@@ -115,6 +123,18 @@ export function Sidebar({
       onClick: () => onDeleteSession(sessionId),
     },
   ]
+
+  const running = status.state === 'running' || status.state === 'starting'
+
+  const handleStatusAction = () => {
+    if (busy) return
+    if (running) {
+      onStop()
+    } else {
+      onSave()
+      onStart()
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -192,7 +212,7 @@ export function Sidebar({
           <SettingOutlined />
           <span>设置</span>
         </button>
-        <button type="button" className="status-card">
+        <button type="button" className="status-card" onClick={handleStatusAction} disabled={busy}>
           <span className={`status-dot ${statusClass(status.state)}`}></span>
           <span>
             <strong>{statusLabel(status.state)}</strong>

@@ -173,7 +173,7 @@
 
 .history-search:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(26, 29, 33, 0.1);
 }
 
 .history-search::placeholder {
@@ -224,12 +224,12 @@
 
 .send-btn.active {
   border-radius: 50%;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+  background: linear-gradient(135deg, #1a1d21 0%, #15171a 100%);
+  box-shadow: 0 2px 8px rgba(26, 29, 33, 0.15);
 }
 
 .send-btn.active:hover {
-  background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+  background: linear-gradient(135deg, #15171a 0%, #101215 100%);
 }
 
 .send-btn.stop-btn {
@@ -307,15 +307,15 @@
 }
 
 .primary-btn {
-  border: 1px solid rgba(22, 163, 74, 0.3);
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border: 1px solid rgba(26, 29, 33, 0.15);
+  background: linear-gradient(135deg, #1a1d21 0%, #15171a 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 2px 8px rgba(26, 29, 33, 0.12);
 }
 
 .primary-btn:hover {
-  background: linear-gradient(135deg, #15803d 0%, #166534 100%);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  background: linear-gradient(135deg, #15171a 0%, #101215 100%);
+  box-shadow: 0 4px 12px rgba(26, 29, 33, 0.15);
 }
 
 .primary-btn:active {
@@ -342,7 +342,7 @@
 
 .status-dot.running {
   background: var(--green);
-  box-shadow: 0 0 8px rgba(22, 163, 74, 0.5);
+  box-shadow: 0 0 8px rgba(26, 29, 33, 0.2);
 }
 
 .status-dot.pending {

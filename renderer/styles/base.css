@@ -99,6 +99,6 @@ select:focus {
 }
 
 ::selection {
-  background: rgba(16, 163, 127, 0.2);
+  background: rgba(26, 29, 33, 0.2);
   color: var(--ink);
 }

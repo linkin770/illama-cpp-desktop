@@ -34,12 +34,3 @@
   font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, "Roboto Mono", monospace;
   font-size: 12px;
 }
-
-.service-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-left: auto;
-  min-width: 0;
-}

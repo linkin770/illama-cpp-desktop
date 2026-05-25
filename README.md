@@ -1,6 +1,6 @@
 # illama-cpp-desktop
 
-> React 重构版本 v1.0.2026.05.25
+> React 重构版本 v1.0.2026.05.26
 
 [![520](https://img.shields.io/badge/💖-袁袁袁大王-ff69b4?style=flat-square\&labelColor=ffb6c1)](https://github.com/linkin770/illama-cpp-desktop)
 
@@ -163,8 +163,7 @@ npm start
 │   │   │   ├── ServiceBar.tsx     # 底部服务栏（启动/停止/保存）
 │   │   │   ├── TerminalPanel.tsx  # 终端日志面板
 │   │   │   ├── ModelInfoModal.tsx # 模型信息弹窗
-│   │   │   ├── ChatNav.tsx        # 消息导航
-│   │   │   └── Toast.tsx          # 提示消息
+│   │   │   └── ChatNav.tsx        # 消息导航
 │   │   ├── hooks/
 │   │   │   └── useAppState.ts     # 应用状态 Hook（会话、配置、聊天）
 │   │   ├── types/
@@ -172,22 +171,16 @@ npm start
 │   │   ├── utils/
 │   │   │   └── index.ts           # 工具函数（token 预估、时间格式化等）
 │   │   └── theme.ts               # Ant Design 主题配置
-│   ├── styles/              # CSS 样式（按模块拆分，共15个文件）
+│   ├── styles/              # CSS 样式（按模块拆分）
 │   │   ├── variables.css    # CSS 变量
 │   │   ├── base.css         # 基础样式
 │   │   ├── layout.css       # 布局
-│   │   ├── nav.css          # 消息导航
 │   │   ├── sidebar.css      # 侧边栏
 │   │   ├── chat.css         # 聊天区域
 │   │   ├── composer.css     # 输入框
-│   │   ├── service.css      # 服务栏
-│   │   ├── components.css   # 通用组件
-│   │   ├── forms.css        # 表单
 │   │   ├── settings.css     # 设置面板
-│   │   ├── settings-extra.css # 设置扩展
-│   │   ├── terminal.css     # 终端
-│   │   ├── attachments.css  # 附件
-│   │   └── extra.css        # 覆盖和扩展样式
+│   │   ├── extra.css        # 覆盖和扩展样式
+│   │   └── ...
 │   └── index.html           # HTML 入口
 ├── llama/                   # llama.cpp 编译产物（需自行下载）
 ├── skills/                  # 技能 SKILL.md 文件存储目录
@@ -205,9 +198,7 @@ npm start
 | Electron         | 41.1.1  | 跨平台桌面应用框架       |
 | React            | ^19.2.6 | UI 框架           |
 | TypeScript       | ^6.0.3  | 类型安全            |
-| Ant Design       | ^6.4.2  | UI 组件库          |
 | Ant Design X     | ^2.7.0  | 对话 UI 组件库       |
-| Ant Design X Markdown | ^2.7.0 | Markdown 渲染     |
 | esbuild          | ^0.28.0 | 渲染进程构建工具        |
 | electron-builder | 26.8.1  | 打包工具            |
 | pdf-parse        | ^1.1.1  | PDF 文本提取        |
@@ -275,21 +266,51 @@ ${ARGUMENTS}
 
 ## 📝 更新日志
 
+### v1.0.2026.05.26 (2026-05-26)
+
+#### ✨ 新功能
+
+- **多标签会话**：浏览器风格标签栏，支持同时打开多个对话标签，点击切换互不干扰
+- **侧边栏状态卡片交互**：点击侧边栏底部状态卡片即可保存并启动/停止服务，精简 UI
+
+#### 🎨 主题更新
+
+- **灰蓝色系**：全局配色从灰绿色（#10a37f）更新为灰蓝色（#1a1d21），风格更沉稳
+
+#### 🧹 UI 简化
+
+- **删除底部服务栏**：移除重复的 ServiceBar 组件，状态信息统一在侧边栏展示
+- **标签栏集成**：聊天区顶部新增 Ant Design Tabs 标签栏，支持新建/关闭/切换标签
+- **回到最新按钮重新定位**：固定在输入框上方 150px，距右 35px
+
+#### 🔧 代码清理
+
+- **移除遗留文件**：删除 `ServiceBar.tsx`、`service.css`（功能已合并到侧边栏）
+- **删除死 IPC**：移除 `setTheme`、`revealPath`、`saveFile`、`select-files`、`select-model`、`select-config`、`select-directory`、`chatCompletion` 等未使用的 IPC 通道
+- **清理死代码**：移除 `utils/index.ts` 中 11 个未使用的函数
+- **清理 Hook**：移除 `useAppState` 中未使用的 `removeChatMessage`、`setDirty`、`setStatus`、`setLogs`、`setAttachmentMenuOpen`
+- **移除无用依赖**：`fs-extra`、`pdfjs-dist`；`@types/react`、`@types/react-dom` 移至 devDependencies
+
+#### 🐛 Bug 修复
+
+- **修复 llama:open-url 参数不匹配**：preload 传递 `{url}` 对象但与 main.mjs 签名不匹配，调用必失败
+- **TypeScript 类型补全**：`LlamaDesktopAPI` 补充缺失方法定义
+
 ### v1.0.2026.05.25 (2026-05-25)
 
 #### 🧹 代码清理
 
 - **删除遗留文件**：移除 `tmp_settings2.js`（旧版设置代码）、`renderer/test.html`（调试用HTML）
-- **删除重复脚本**：移除 `install-electron.js`、`install-electron.cjs`、`download-electron.cjs`（均未被项目引用）
-- **移除深色模式残留**：删除 `dark-mode.css` 及其 `index.html` 引用（深色模式已在 v1.0.2026.05.19 移除，但CSS文件残留）
+- **删除重复脚本**：移除 `install-electron.js`、`install-electron.cjs`、`download-electron.cjs`
+- **移除深色模式残留**：删除 `dark-mode.css` 及其 `index.html` 引用
 - **清理死代码**：移除 `utils/index.ts` 中 11 个未使用的函数（`escapeAttribute`、`isNearBottom`、`basename`、`modelFamilyFromName`、`quantLabelFromName`、`paramScaleFromName`、`splitThinkingOutput`、`splitCodeParts`、`renderTextBlock`、`canPreviewCode`、`highlightCode`、`buildApiMessages`）
 - **清理无用 Hook 返回值**：移除 `useAppState` 中未使用的 `removeChatMessage`、`setDirty`、`setStatus`、`setLogs`、`setAttachmentMenuOpen`
 - **清理无用类型字段**：移除 `AppState.isDraggingScrollbar`（ChatScreen 使用独立 useRef 管理）
-- **删除无用 IPC**：移除 `openUrl` / `llama:open-url`（功能未使用且实现有 bug）
+- **删除无用 Url**：移除 `openUrl` / `llama:open-url`
 
 #### 📦 依赖清理
 
-- **移除无用依赖**：`fs-extra`（未使用）、`pdfjs-dist`（PDF 解析通过 pdf-parse 内嵌）
+- **移除无用依赖**：`fs-extra`、`pdfjs-dist`
 - **修正依赖分类**：`@types/react`、`@types/react-dom` 从 dependencies 移至 devDependencies
 
 #### 🔧 类型修复

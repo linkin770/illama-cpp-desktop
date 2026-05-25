@@ -191,6 +191,7 @@ export interface AppState {
   sidebarCollapsed: boolean // 侧边栏是否折叠
   sessions: Session[] // 会话列表
   currentSessionId: string // 当前会话 ID
+  openTabs: string[] // 当前打开的标签页 ID 列表
   historySearch: string // 历史搜索词
   historyMenuId: string // 历史菜单 ID
   historyDialog: null | Record<string, unknown> // 历史对话框

@@ -1,7 +1,7 @@
 {
   "name": "illama-cpp-desktop",
-  "version": "1.0.2026.05.25",
-  "description": "A feature-complete Windows desktop control panel for running and chatting with a local llama.cpp server. Supports OpenAI compatible API, built-in chat interface, system tray background running, and ChatGPT-style white theme with green accents. 💖 献给亲爱的袁袁袁大王。",
+  "version": "1.0.2026.05.26",
+  "description": "A feature-complete Windows desktop control panel for running and chatting with a local llama.cpp server. Supports OpenAI compatible API, built-in chat interface with tabbed sessions, system tray background running, and clean white theme with gray-blue accents (#1a1d21). 💖 献给亲爱的袁袁袁大王。",
   "author": "linkin770",
   "license": "MIT",
   "type": "module",

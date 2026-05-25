@@ -1,4 +1,4 @@
-﻿// 聊天屏幕组件 - 展示消息列表和输入区域
+// 聊天屏幕组件 - 展示消息列表和输入区域
 import { useRef, useState, useCallback, useEffect, useMemo, memo } from 'react'
 import type { ChatMessage, Attachment, Skill } from '../types'
 import { Bubble } from '@ant-design/x'

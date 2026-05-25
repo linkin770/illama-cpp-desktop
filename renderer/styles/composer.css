@@ -28,8 +28,8 @@
 }
 
 .composer:focus-within {
-  border-color: #10a37f;
-  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+  border-color: #1a1d21;
+  box-shadow: 0 0 0 3px rgba(26, 29, 33, 0.12);
 }
 
 .attach-wrap {
@@ -154,14 +154,14 @@
 }
 
 .ant-sender-actions-btn-send-button.ant-btn-primary:not(:disabled) {
-  background-color: #10a37f !important;
-  border-color: #10a37f !important;
+  background-color: #1a1d21 !important;
+  border-color: #1a1d21 !important;
   color: #ffffff !important;
 }
 
 .ant-sender-actions-btn-send-button.ant-btn-primary:not(:disabled):hover {
-  background-color: #0d8a6a !important;
-  border-color: #0d8a6a !important;
+  background-color: #15171a !important;
+  border-color: #15171a !important;
 }
 
 .ant-sender-actions-btn-send-button.ant-btn-primary:disabled {

@@ -80,17 +80,17 @@
 }
 
 .nav-item.active .nav-dash {
-  color: #10a37f;
+  color: #1a1d21;
   font-weight: 700;
   font-size: 16px;
 }
 
 .nav-item.active .nav-text {
-  color: #10a37f;
+  color: #1a1d21;
 }
 
 #chat-nav-bar.expanded .nav-item.active:hover .nav-text {
-  color: #10a37f;
+  color: #1a1d21;
   filter: brightness(1.2);
 }
 
