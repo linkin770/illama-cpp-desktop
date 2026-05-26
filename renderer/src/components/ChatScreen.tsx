@@ -1,7 +1,7 @@
 // 聊天屏幕组件 - 展示消息列表和输入区域
 import { useRef, useState, useCallback, useEffect, useMemo, memo } from 'react'
 import type { ChatMessage, Attachment, Skill } from '../types'
-import { Bubble } from '@ant-design/x'
+import { Bubble, Prompts } from '@ant-design/x'
 import {
   renderMessageContent,
   renderMessageMeta,
@@ -238,12 +238,65 @@ export function ChatScreen({
 
   // 空状态
   if (chatMessages.length === 0) {
+    const prompts = [
+      {
+        key: '1',
+        icon: '💡',
+        label: '解释量子计算',
+        description: '用简单易懂的方式介绍量子计算的基本原理',
+      },
+      {
+        key: '2',
+        icon: '📝',
+        label: '帮我写代码',
+        description: '生成一个 Python 快速排序算法的实现',
+      },
+      {
+        key: '3',
+        icon: '🌍',
+        label: '翻译这段文字',
+        description: '将中文翻译成英文，保持专业术语准确',
+      },
+      {
+        key: '4',
+        icon: '🎨',
+        label: '创意写作',
+        description: '写一个关于未来城市的短篇故事开头',
+      },
+    ]
+
     return (
       <section className="chat-screen empty-chat">
         <div className="chat-feed" id="chatFeed" ref={chatFeedRef}>
           <div className="empty-state">
             <h1>illama.exe</h1>
             <p>无需命令行，就能管理本地AI服务。它既是控制台，也是聊天室，更是连接OpenClaw、Claude Code等外部工具的桥梁。</p>
+            <div style={{ 
+              marginTop: 32, 
+              display: 'flex', 
+              justifyContent: 'center',
+              width: '100%',
+              maxWidth: 900,
+              margin: '32px auto 0'
+            }}>
+              <Prompts
+                items={prompts}
+                onItemClick={(item) => {
+                  const text = String(item.data?.label || '')
+                  onInputChange(text)
+                }}
+                styles={{
+                  item: {
+                    flex: '1 1 calc(25% - 12px)',
+                    minWidth: 200,
+                  },
+                  list: {
+                    gap: 16,
+                    flexWrap: 'wrap',
+                  },
+                }}
+              />
+            </div>
           </div>
         </div>
         <ChatInput
