@@ -36,6 +36,11 @@ export interface LlamaDesktopAPI {
   revealPath(filePath: string): Promise<void>
   // 保存文件
   saveFile(payload: Record<string, unknown>): Promise<unknown>
+  // 窗口控制
+  closeWindow(): void
+  minimizeWindow(): void
+  maximizeWindow(): void
+  isWindowMaximized(): Promise<boolean>
 }
 
 // 全局类型声明 - 将 llamaDesktop API 挂载到 window 对象

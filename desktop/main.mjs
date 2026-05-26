@@ -1,4 +1,4 @@
-﻿/**
+/**
  * illama Desktop - Electron 主进程入口文件
  * 负责窗口管理、llama.cpp 服务启动/停止、IPC 通信、系统托盘管理等核心功能
  */
@@ -1341,12 +1341,8 @@ function createMainWindow() {
     title: 'illama Desktop',
     backgroundColor: '#ffffff',
     icon: iconPath,
+    frame: false,
     titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#ffffff',
-      symbolColor: '#1a1a1a',
-      height: 36,
-    },
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -1987,6 +1983,26 @@ function registerIpc() {
     appIsQuitting = true
     app.quit()
     return { ok: true }
+  })
+
+  ipcMain.on('llama:window-close', () => {
+    mainWindow?.close()
+  })
+
+  ipcMain.on('llama:window-minimize', () => {
+    mainWindow?.minimize()
+  })
+
+  ipcMain.on('llama:window-maximize', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow?.unmaximize()
+    } else {
+      mainWindow?.maximize()
+    }
+  })
+
+  ipcMain.handle('llama:window-is-maximized', async () => {
+    return mainWindow?.isMaximized() || false
   })
 
   // ============ Skill Management ============

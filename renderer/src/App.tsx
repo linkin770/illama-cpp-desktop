@@ -12,6 +12,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ModelInfoModal } from './components/ModelInfoModal';
 import { Toast } from './components/Toast';
 import { ChatNav } from './components/ChatNav';
+import HeaderBar from './components/HeaderBar';
 import type { ChatMessage, Skill } from './types';
 import { friendlyErrorMessage, estimateTokens } from './utils';
 import { themeConfig } from './theme';
@@ -663,20 +664,22 @@ function App() {
       locale={zhCN}
       theme={currentTheme}
     >
-    <div className="drag-region">
-      <button type="button" className="sidebar-toggle" data-action="toggle-sidebar" title={state.sidebarCollapsed ? '显示侧边栏' : '隐藏侧边栏'} onClick={() => setSidebarCollapsed(!state.sidebarCollapsed)}>
-        {state.sidebarCollapsed ? '›' : '‹'}
-      </button>
-    </div>
     <div className={`app-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} busy={state.busy} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)} onSave={save} onStart={start} onStop={stop}/>
 
       <main className="main-area">
+        <HeaderBar 
+          openTabs={state.openTabs} 
+          sessions={state.sessions} 
+          activeKey={state.currentSessionId} 
+          onTabChange={openSession} 
+          onTabClose={closeTab} 
+          onTabAdd={startFreshSession}
+          sidebarCollapsed={state.sidebarCollapsed}
+          onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}
+        />
         {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (
-          <>
-            <TabBar openTabs={state.openTabs} sessions={state.sessions} activeKey={state.currentSessionId} onChange={openSession} onClose={closeTab} onAdd={startFreshSession}/>
-            <ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>
-          </>
+          <ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>
         )}
       </main>
 

@@ -1,3 +1,35 @@
+@font-face {
+  font-family: 'MiSans';
+  src: url('../assets/fonts/MiSans-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans';
+  src: url('../assets/fonts/MiSans-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('../assets/fonts/MiSansLatin-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('../assets/fonts/MiSansLatin-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #ffffff;
   --sidebar: #f7f7f8;
@@ -22,7 +54,7 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 18px;
-  --font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family: "MiSans", "MiSans Latin", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --code-bg: #f6f8fa;
   --code-border: #d0d7de;
   --code-text: #24292f;

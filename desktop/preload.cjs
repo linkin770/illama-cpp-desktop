@@ -1,4 +1,4 @@
-﻿const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('llamaDesktop', {
   getState: () => ipcRenderer.invoke('llama:get-state'),
@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   generateSkillContent: payload => ipcRenderer.invoke("llama:skill-generate", payload),
   readSkill: payload => ipcRenderer.invoke("llama:skill-read", payload),
   deleteSkill: payload => ipcRenderer.invoke("llama:skill-delete", payload),
+  closeWindow: () => ipcRenderer.send('llama:window-close'),
+  minimizeWindow: () => ipcRenderer.send('llama:window-minimize'),
+  maximizeWindow: () => ipcRenderer.send('llama:window-maximize'),
+  isWindowMaximized: () => ipcRenderer.invoke('llama:window-is-maximized'),
   onEvent: callback => {
     const handler = (_event, payload) => callback(payload)
     ipcRenderer.on('llama:event', handler)

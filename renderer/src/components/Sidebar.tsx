@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo } from 'react'
 import { Conversations } from '@ant-design/x'
 import type { MenuProps } from 'antd'
-import { EditOutlined, DownloadOutlined, DeleteOutlined, MessageOutlined, SettingOutlined } from '@ant-design/icons'
+import { EditOutlined, DownloadOutlined, DeleteOutlined, MessageOutlined, SettingOutlined, SearchOutlined, CodeOutlined } from '@ant-design/icons'
 import type { Session, Status } from '../types'
 import { escapeHtml, statusLabel, statusClass, shortTime } from '../utils'
 
@@ -90,7 +90,7 @@ export function Sidebar({
       group: getTimeGroup(session.updatedAt),
       label: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
             {escapeHtml(session.title || '新聊天')}
           </span>
           <span style={{ fontSize: 11, opacity: 0.6 }}>
@@ -151,6 +151,7 @@ export function Sidebar({
         data-action="new-chat"
         onClick={onNewChat}
       >
+        <MessageOutlined />
         新聊天
       </button>
       <button
@@ -159,6 +160,7 @@ export function Sidebar({
         data-action="focus-chat"
         onClick={onFocusChat}
       >
+        <SearchOutlined />
         搜索对话
       </button>
       <button
@@ -167,6 +169,7 @@ export function Sidebar({
         data-action="show-terminal"
         onClick={onShowTerminal}
       >
+        <CodeOutlined />
         终端日志
       </button>
 

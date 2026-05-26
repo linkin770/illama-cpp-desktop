@@ -663,3 +663,157 @@
 .chat-tab-bar .ant-tabs-nav-add {
   color: var(--muted);
 }
+
+/* 自定义标题栏 */
+.header-bar {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 50;
+  height: 36px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.header-drag-region {
+  position: absolute;
+  inset: 0;
+  -webkit-app-region: drag;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0;
+}
+
+.header-left {
+  flex-shrink: 0;
+  padding: 0 6px;
+}
+
+.header-left .sidebar-toggle {
+  width: 28px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 300;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.header-left .sidebar-toggle:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+.header-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.header-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.window-btn {
+  width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background-color 120ms ease;
+}
+
+.window-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.window-btn svg {
+  color: var(--muted);
+  transition: color 120ms ease;
+}
+
+.window-btn:hover svg {
+  color: var(--ink);
+}
+
+.window-btn.close-btn:hover {
+  background: #e81123;
+}
+
+.window-btn.close-btn:hover svg {
+  color: #ffffff;
+}
+
+/* 标题栏内的标签样式 */
+.header-center .ant-tabs {
+  margin-bottom: 0;
+  background: transparent;
+}
+
+.header-center .ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.header-center .ant-tabs-tab {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 12px !important;
+  margin: 0 2px !important;
+  -webkit-app-region: no-drag;
+}
+
+.header-center .ant-tabs-tab-active {
+  color: var(--ink);
+}
+
+.header-center .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--ink);
+}
+
+.header-center .ant-tabs-ink-bar {
+  background: var(--ink);
+}
+
+.header-center .ant-tabs-tab-remove {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.header-center .ant-tabs-tab-remove:hover {
+  color: var(--ink);
+}
+
+.header-center .ant-tabs-nav-add {
+  color: var(--muted);
+  -webkit-app-region: no-drag;
+}
