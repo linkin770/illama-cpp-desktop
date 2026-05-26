@@ -28,9 +28,9 @@ models/
 ccx/
 *.ccx
 
-# fonts — embedded fonts not uploaded
-renderer/assets/fonts/
-*.zip
+# font archives — zip files not uploaded
+MiSans.zip
+MiSans_Latin.zip
 
 # OS / editor
 .DS_Store
