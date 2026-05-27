@@ -10,6 +10,7 @@ import { TabBar } from './components/TabBar';
 import { TerminalPanel } from './components/TerminalPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ModelInfoModal } from './components/ModelInfoModal';
+import { SystemPromptModal } from './components/SystemPromptModal';
 import { Toast } from './components/Toast';
 import { ChatNav } from './components/ChatNav';
 import HeaderBar from './components/HeaderBar';
@@ -28,6 +29,8 @@ function App() {
     startFreshSession,
     renameSession,
     deleteSession,
+    setSessionSystemPrompt,
+    clearSessionSystemPrompt,
     updateConfig,
     updateChatInput,
     addAttachments,
@@ -52,6 +55,7 @@ function App() {
   const [renameState, setRenameState] = useState<{ open: boolean; sessionId: string; title: string; value: string } | null>(null)
   const [sessionSkills, setSessionSkills] = useState<Record<string, Skill | null>>({})
   const selectedSkill = sessionSkills[state.currentSessionId] || null
+  const [systemPromptModalOpen, setSystemPromptModalOpen] = useState(false)
 
   const currentTheme = useMemo(() => ({
     ...themeConfig,
@@ -144,6 +148,28 @@ function App() {
   const pickSkill = useCallback((skill: Skill) => { setSessionSkills(prev => ({ ...prev, [state.currentSessionId]: skill })) }, [state.currentSessionId])
   const removeSkill = useCallback(() => { setSessionSkills(prev => ({ ...prev, [state.currentSessionId]: null })) }, [state.currentSessionId])
 
+  // 获取当前会话的系统提示词
+  const currentSessionPrompt = useMemo(() => {
+    const session = state.sessions.find(s => s.id === state.currentSessionId)
+    return session?.systemPrompt || ''
+  }, [state.sessions, state.currentSessionId])
+
+  // 打开系统提示词弹窗
+  const openSystemPromptModal = useCallback(() => {
+    setSystemPromptModalOpen(true)
+  }, [])
+
+  // 保存系统提示词
+  const saveSystemPrompt = useCallback((prompt: string) => {
+    setSessionSystemPrompt(state.currentSessionId, prompt)
+    setSystemPromptModalOpen(false)
+    if (prompt.trim()) {
+      setToast('对话提示词已设置')
+    } else {
+      setToast('对话提示词已清除')
+    }
+  }, [state.currentSessionId, setSessionSystemPrompt, setToast])
+
 
 
   // 选择附件（图片、PDF、文件等）
@@ -193,13 +219,27 @@ function App() {
     }
     setChatBusy(true);
     const attachments = state.attachments;
-    // 技能注入：如果选择了技能，将 SKILL.md 主体作为 system 消息
-    const skill = selectedSkill;
+    
+    // 获取当前会话
+    const currentSession = state.sessions.find(s => s.id === state.currentSessionId);
+    const sessionPrompt = currentSession?.systemPrompt;
+    
+    // 优先级：会话提示词 > 技能
     let systemMessage: ChatMessage | null = null;
-    if (skill && skill.body) {
-      let body = skill.body;
+    
+    if (sessionPrompt && sessionPrompt.trim()) {
+      // 使用会话级系统提示词
+      systemMessage = {
+        role: 'system',
+        content: sessionPrompt,
+        createdAt: Date.now(),
+        localOnly: true,
+      };
+    } else if (selectedSkill && selectedSkill.body) {
+      // 使用技能提示词
+      let body = selectedSkill.body;
       if (body.includes('${ARGUMENTS}')) {
-        body = body.replace(/$\{ARGUMENTS\}/g, content || '');
+        body = body.replace(/\$\{ARGUMENTS\}/g, content || '');
       }
       systemMessage = {
         role: 'system',
@@ -352,8 +392,37 @@ function App() {
       variants: existingVariants,
       currentVariantIndex: existingVariants.length,
     };
-    const skillSystemMsg = selectedSkill && selectedSkill.body ? { role: 'system' as const, content: selectedSkill.body.replace(/\$\{ARGUMENTS\}/g, userMessage.content || ''), createdAt: Date.now(), localOnly: true } as ChatMessage : null;
-    const allMessages = skillSystemMsg ? [skillSystemMsg, ...truncatedMessages, assistantMessage] : [...truncatedMessages, assistantMessage];
+    
+    // 获取当前会话
+    const currentSession = state.sessions.find(s => s.id === state.currentSessionId);
+    const sessionPrompt = currentSession?.systemPrompt;
+    
+    // 优先级：会话提示词 > 技能
+    let systemMessage: ChatMessage | null = null;
+    
+    if (sessionPrompt && sessionPrompt.trim()) {
+      // 使用会话级系统提示词
+      systemMessage = {
+        role: 'system',
+        content: sessionPrompt,
+        createdAt: Date.now(),
+        localOnly: true,
+      };
+    } else if (selectedSkill && selectedSkill.body) {
+      // 使用技能提示词
+      let body = selectedSkill.body;
+      if (body.includes('${ARGUMENTS}')) {
+        body = body.replace(/\$\{ARGUMENTS\}/g, userMessage.content || '');
+      }
+      systemMessage = {
+        role: 'system',
+        content: body,
+        createdAt: Date.now(),
+        localOnly: true,
+      };
+    }
+    
+    const allMessages = systemMessage ? [systemMessage, ...truncatedMessages, assistantMessage] : [...truncatedMessages, assistantMessage];
     setChatMessages(truncatedMessages);
     addChatMessage(assistantMessage);
     setStreamRequestId(requestId);
@@ -669,23 +738,47 @@ function App() {
 
       <main className="main-area">
         <HeaderBar 
-          openTabs={state.openTabs} 
-          sessions={state.sessions} 
-          activeKey={state.currentSessionId} 
-          onTabChange={openSession} 
-          onTabClose={closeTab} 
-          onTabAdd={startFreshSession}
           sidebarCollapsed={state.sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}
         />
         {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (
-          <ChatScreen chatMessages={state.chatMessages} chatInput={state.chatInput} attachments={state.attachments} chatBusy={state.chatBusy} config={state.config} onInputChange={updateChatInput} onSend={sendChat} onAbort={abortChat} onPickAttachment={pickAttachment} onPickSkill={pickSkill} selectedSkill={selectedSkill} onRemoveSkill={removeSkill} onRemoveAttachment={removeAttachment} onOpenModelInfo={openModelInfo} onCopyMessage={copyMessage} onEditMessage={editMessage} onRetryMessage={retryMessage} onDeleteMessage={deleteMessage} onPrevVariant={prevVariant} onNextVariant={nextVariant}/>
+          <ChatScreen 
+            chatMessages={state.chatMessages} 
+            chatInput={state.chatInput} 
+            attachments={state.attachments} 
+            chatBusy={state.chatBusy} 
+            config={state.config} 
+            onInputChange={updateChatInput} 
+            onSend={sendChat} 
+            onAbort={abortChat} 
+            onPickAttachment={pickAttachment} 
+            onPickSkill={pickSkill} 
+            selectedSkill={selectedSkill} 
+            onRemoveSkill={removeSkill} 
+            onRemoveAttachment={removeAttachment} 
+            onOpenModelInfo={openModelInfo} 
+            onCopyMessage={copyMessage} 
+            onEditMessage={editMessage} 
+            onRetryMessage={retryMessage} 
+            onDeleteMessage={deleteMessage} 
+            onPrevVariant={prevVariant} 
+            onNextVariant={nextVariant}
+            systemPrompt={currentSessionPrompt}
+            onOpenSystemPromptModal={openSystemPromptModal}
+          />
         )}
       </main>
 
       <SettingsPanel settingsOpen={state.settingsOpen} active={state.active} config={state.config} validation={state.validation} status={state.status} logs={state.logs} dirty={state.dirty} launch={state.launch} onClose={() => setSettingsOpen(false)} onSelectSection={setActive} onUpdateConfig={updateConfig} onPickFile={pickFile} onCopyLaunchCommand={() => { const preview = (state.launch as Record<string, string>).preview; if (preview) { navigator.clipboard.writeText(preview); setToast('命令已复制'); } }}/>
 
       <ModelInfoModal modelInfoOpen={state.modelInfoOpen} modelInfo={state.modelInfo} onClose={() => setModelInfoOpen(false)}/>
+
+      <SystemPromptModal 
+        open={systemPromptModalOpen}
+        currentPrompt={currentSessionPrompt}
+        onSave={saveSystemPrompt}
+        onCancel={() => setSystemPromptModalOpen(false)}
+      />
 
       <Toast message={state.toast}/>
       {renameState?.open && (

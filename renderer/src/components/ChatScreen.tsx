@@ -31,6 +31,8 @@ interface ChatScreenProps {
   onDeleteMessage: (index: number) => void
   onPrevVariant: (index: number) => void
   onNextVariant: (index: number) => void
+  systemPrompt?: string
+  onOpenSystemPromptModal: () => void
 }
 
 // 使用 memo 避免在流式输出时重新渲染所有已生成的消息
@@ -116,6 +118,8 @@ export function ChatScreen({
   onDeleteMessage,
   onPrevVariant,
   onNextVariant,
+  systemPrompt,
+  onOpenSystemPromptModal,
 }: ChatScreenProps) {
   const chatFeedRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -313,6 +317,8 @@ export function ChatScreen({
           onPickAttachment={onPickAttachment}
           onRemoveAttachment={onRemoveAttachment}
           onOpenModelInfo={onOpenModelInfo}
+          systemPrompt={systemPrompt}
+          onOpenSystemPromptModal={onOpenSystemPromptModal}
         />
       </section>
     )
@@ -361,6 +367,8 @@ export function ChatScreen({
         onPickAttachment={onPickAttachment}
         onRemoveAttachment={onRemoveAttachment}
         onOpenModelInfo={onOpenModelInfo}
+        systemPrompt={systemPrompt}
+        onOpenSystemPromptModal={onOpenSystemPromptModal}
       />
     </section>
   )

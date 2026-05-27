@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { FileImageOutlined, FileTextOutlined, ToolOutlined } from '@ant-design/icons'
+import { FileImageOutlined, FileTextOutlined, ToolOutlined, SettingOutlined, BulbOutlined } from '@ant-design/icons'
 import { Sender } from '@ant-design/x'
 import type { Attachment, Skill } from '../types'
 import { escapeHtml, modelName } from '../utils'
@@ -18,6 +18,8 @@ interface ChatInputProps {
   selectedSkill: Skill | null
   onRemoveSkill: () => void
   onOpenModelInfo: () => void
+  systemPrompt?: string
+  onOpenSystemPromptModal: () => void
 }
 
 export function ChatInput({
@@ -34,6 +36,8 @@ export function ChatInput({
   selectedSkill,
   onRemoveSkill,
   onOpenModelInfo,
+  systemPrompt,
+  onOpenSystemPromptModal,
 }: ChatInputProps) {
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const [attachmentMenuPosition, setAttachmentMenuPosition] = useState<{ left: number; bottom: number } | null>(null)
@@ -95,7 +99,22 @@ export function ChatInput({
 
     return (
     <div className="composer-wrap">
-      {selectedSkill && (
+      {systemPrompt && (
+        <div className="attachment-row">
+          <span className="attachment-chip" style={{ backgroundColor: '#e6f4ff', color: '#1677ff', borderColor: '#91caff' }} title="已设置对话提示词">
+            <strong><BulbOutlined /> 对话提示词</strong>
+            <button
+              type="button"
+              className="attachment-remove"
+              onClick={onOpenSystemPromptModal}
+              title="编辑提示词"
+            >
+              <SettingOutlined style={{ fontSize: 12 }} />
+            </button>
+          </span>
+        </div>
+      )}
+      {selectedSkill && !systemPrompt && (
         <div className="attachment-row">
           <span className="attachment-chip skill-chip" title={selectedSkill.name}>
             <strong>{"🔧 " + selectedSkill.name}</strong>
@@ -152,6 +171,15 @@ export function ChatInput({
               <div className="skill-wrap" style={{ position: "static" }}>
                 <button className="round-btn" type="button" onClick={handleSkillButtonClick} title="选择技能"><ToolOutlined /></button>
               </div>
+              <button
+                className="round-btn"
+                type="button"
+                onClick={onOpenSystemPromptModal}
+                title={systemPrompt ? "编辑对话提示词" : "设置对话提示词"}
+                style={{ color: systemPrompt ? '#1677ff' : undefined }}
+              >
+                <BulbOutlined />
+              </button>
               <button
                 className="model-chip model-trigger"
                 type="button"

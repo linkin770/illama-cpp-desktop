@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Tabs } from 'antd'
-import type { Session } from '../types'
 
 interface HeaderBarProps {
-  openTabs: string[]
-  sessions: Session[]
-  activeKey: string
-  onTabChange: (key: string) => void
-  onTabClose: (key: string) => void
-  onTabAdd: () => void
   sidebarCollapsed: boolean
   onToggleSidebar: () => void
 }
 
-export default function HeaderBar({ openTabs, sessions, activeKey, onTabChange, onTabClose, onTabAdd, sidebarCollapsed, onToggleSidebar }: HeaderBarProps) {
+export default function HeaderBar({ sidebarCollapsed, onToggleSidebar }: HeaderBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
@@ -37,15 +29,6 @@ export default function HeaderBar({ openTabs, sessions, activeKey, onTabChange, 
     setIsMaximized(prev => !prev)
   }
 
-  const tabItems = openTabs.map(id => {
-    const session = sessions.find(s => s.id === id)
-    return {
-      key: id,
-      label: session?.title || '新聊天',
-      closable: openTabs.length > 1,
-    }
-  })
-
   return (
     <div className="header-bar">
       <div className="header-drag-region"></div>
@@ -62,21 +45,7 @@ export default function HeaderBar({ openTabs, sessions, activeKey, onTabChange, 
           </button>
         </div>
         <div className="header-center">
-          <Tabs
-            type="editable-card"
-            size="small"
-            activeKey={activeKey}
-            onChange={onTabChange}
-            onEdit={(key, action) => {
-              if (action === 'add') {
-                onTabAdd()
-              } else if (action === 'remove') {
-                onTabClose(key as string)
-              }
-            }}
-            items={tabItems}
-            hideAdd={false}
-          />
+          {/* 标签栏已移除 */}
         </div>
         <div className="header-actions">
           <button className="window-btn minimize-btn" onClick={handleMinimize} title="最小化">

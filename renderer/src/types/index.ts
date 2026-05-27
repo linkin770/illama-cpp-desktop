@@ -181,6 +181,7 @@ export interface Session {
   title: string // 会话标题
   messages: ChatMessage[] // 消息列表
   updatedAt: number // 更新时间戳
+  systemPrompt?: string // 会话级系统提示词（可选）
 }
 
 // 应用状态类型 - 管理整个应用的状态

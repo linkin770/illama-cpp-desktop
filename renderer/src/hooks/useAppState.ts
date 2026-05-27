@@ -106,12 +106,16 @@ export function useAppState() {
     setState(prev => {
       if (!prev.currentSessionId || prev.chatMessages.length === 0) return prev
       
+      // 获取当前会话的 systemPrompt
+      const currentSession = prev.sessions.find(s => s.id === prev.currentSessionId)
+      
       const now = Date.now()
       const next: Session = {
         id: prev.currentSessionId,
         title: titleFromMessages(prev.chatMessages),
         messages: prev.chatMessages,
         updatedAt: now,
+        systemPrompt: currentSession?.systemPrompt, // 保留 systemPrompt
       }
       
       const existingIndex = prev.sessions.findIndex(s => s.id === prev.currentSessionId)
@@ -210,11 +214,14 @@ export function useAppState() {
       const now = Date.now()
       let sessions = prev.sessions
       if (prev.currentSessionId && prev.chatMessages.length > 0) {
+        // 获取当前会话的 systemPrompt
+        const currentSessionData = sessions.find(s => s.id === prev.currentSessionId)
         const current: Session = {
           id: prev.currentSessionId,
           title: titleFromMessages(prev.chatMessages),
           messages: prev.chatMessages,
           updatedAt: now,
+          systemPrompt: currentSessionData?.systemPrompt, // 保留 systemPrompt
         }
         const idx = sessions.findIndex(s => s.id === prev.currentSessionId)
         if (idx >= 0) {
@@ -328,6 +335,28 @@ export function useAppState() {
         }
       }
       return { ...prev, sessions: updatedSessions, openTabs }
+    })
+  }, [])
+
+  // 设置会话级系统提示词
+  const setSessionSystemPrompt = useCallback((sessionId: string, prompt: string) => {
+    setState(prev => {
+      const updatedSessions = prev.sessions.map(s =>
+        s.id === sessionId ? { ...s, systemPrompt: prompt.trim() || undefined, updatedAt: Date.now() } : s
+      )
+      persistSessions(updatedSessions)
+      return { ...prev, sessions: updatedSessions }
+    })
+  }, [])
+
+  // 清除会话级系统提示词
+  const clearSessionSystemPrompt = useCallback((sessionId: string) => {
+    setState(prev => {
+      const updatedSessions = prev.sessions.map(s =>
+        s.id === sessionId ? { ...s, systemPrompt: undefined, updatedAt: Date.now() } : s
+      )
+      persistSessions(updatedSessions)
+      return { ...prev, sessions: updatedSessions }
     })
   }, [])
 
@@ -493,6 +522,8 @@ export function useAppState() {
     startFreshSession,
     renameSession,
     deleteSession,
+    setSessionSystemPrompt,
+    clearSessionSystemPrompt,
     updateConfig,
     updateChatInput,
     addAttachments,

@@ -729,6 +729,8 @@
   align-items: center;
   justify-content: flex-start;
   overflow: hidden;
+  min-width: 0; /* 允许 flex 子项正确收缩 */
+  margin-right: 0px; /* 为窗口控制按钮预留空间 */
 }
 
 .header-actions {
@@ -778,6 +780,28 @@
 .header-center .ant-tabs {
   margin-bottom: 0;
   background: transparent;
+  width: 100%;
+}
+
+/* 隐藏默认的滚动条和三个点按钮 */
+.header-center .ant-tabs-nav-wrap {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.header-center .ant-tabs-nav-wrap::-webkit-scrollbar {
+  height: 0;
+  display: none;
+}
+
+/* 隐藏三个点（更多）按钮 */
+.header-center .ant-tabs-nav-more {
+  display: none !important;
+}
+
+/* 隐藏右侧分割线/边框 */
+.header-center .ant-tabs-nav-operations {
+  display: none !important;
 }
 
 .header-center .ant-tabs-nav {
@@ -787,9 +811,23 @@
 .header-center .ant-tabs-tab {
   color: var(--muted);
   font-size: 13px;
-  padding: 6px 12px !important;
+  padding: 6px 8px !important; /* 减小左右内边距 */
   margin: 0 2px !important;
   -webkit-app-region: no-drag;
+  max-width: 120px; /* 标签最大宽度 */
+  min-width: 60px; /* 标签最小宽度 */
+  flex: 1 1 auto !important; /* 等宽弹性伸缩 */
+  overflow: hidden; /* 隐藏溢出 */
+}
+
+/* 标签文本按钮区域 - 为关闭按钮预留空间 */
+.header-center .ant-tabs-tab-btn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: calc(100% - 20px); /* 为关闭按钮预留空间（约 20px） */
+  vertical-align: middle;
 }
 
 .header-center .ant-tabs-tab-active {
@@ -816,4 +854,42 @@
 .header-center .ant-tabs-nav-add {
   color: var(--muted);
   -webkit-app-region: no-drag;
+}
+
+/* 自定义滚动按钮 */
+.tab-scroll-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: all 120ms ease;
+  z-index: 10;
+}
+
+.tab-scroll-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.tab-scroll-btn svg {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.tab-scroll-btn:hover svg {
+  color: var(--ink);
+}
+
+.tab-scroll-left {
+  margin-right: 4px;
+}
+
+.tab-scroll-right {
+  margin-left: 4px;
 }
