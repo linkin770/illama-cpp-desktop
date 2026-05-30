@@ -33,6 +33,10 @@ interface ChatScreenProps {
   onNextVariant: (index: number) => void
   systemPrompt?: string
   onOpenSystemPromptModal: () => void
+  onUpdateConfig?: (key: string, value: unknown) => void
+  onSetToast?: (message: string) => void
+  onRestartServer?: () => Promise<void>
+  isServerRunning?: boolean
 }
 
 // 使用 memo 避免在流式输出时重新渲染所有已生成的消息
@@ -120,6 +124,10 @@ export function ChatScreen({
   onNextVariant,
   systemPrompt,
   onOpenSystemPromptModal,
+  onUpdateConfig,
+  onSetToast,
+  onRestartServer,
+  isServerRunning,
 }: ChatScreenProps) {
   const chatFeedRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -319,6 +327,10 @@ export function ChatScreen({
           onOpenModelInfo={onOpenModelInfo}
           systemPrompt={systemPrompt}
           onOpenSystemPromptModal={onOpenSystemPromptModal}
+          onUpdateConfig={onUpdateConfig}
+          onSetToast={onSetToast}
+          onRestartServer={onRestartServer}
+          isServerRunning={isServerRunning}
         />
       </section>
     )
@@ -369,6 +381,10 @@ export function ChatScreen({
         onOpenModelInfo={onOpenModelInfo}
         systemPrompt={systemPrompt}
         onOpenSystemPromptModal={onOpenSystemPromptModal}
+        onUpdateConfig={onUpdateConfig}
+        onSetToast={onSetToast}
+        onRestartServer={onRestartServer}
+        isServerRunning={isServerRunning}
       />
     </section>
   )

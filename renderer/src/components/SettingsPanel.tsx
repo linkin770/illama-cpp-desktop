@@ -18,6 +18,7 @@ interface SettingsPanelProps {
   onUpdateConfig: (key: keyof Config, value: unknown) => void
   onPickFile: (fieldName: string, kind: string) => void
   onCopyLaunchCommand: () => void
+  onOpenModelInfo: () => void
 }
 
 // 设置标签页定义
@@ -310,6 +311,7 @@ export function SettingsPanel({
   onUpdateConfig,
   onPickFile,
   onCopyLaunchCommand,
+  onOpenModelInfo,
 }: SettingsPanelProps) {
   if (!settingsOpen) return null
 
@@ -496,6 +498,37 @@ export function SettingsPanel({
                 </div>
                 <div className="settings-callout">注意：这是控制模型是否生成思考；下面的"显示思考过程"只是控制前端是否把已返回的 💭 展示出来。图片理解需要视觉模型和 mmproj。</div>
               </>
+            ))}
+            {settingsCard('当前模型', '点击可查看详细模型信息。', (
+              <div 
+                className="model-info-card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 18px',
+                  background: 'var(--surface)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--line)',
+                  cursor: 'pointer',
+                }}
+                onClick={onOpenModelInfo}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>☯</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>
+                      {config?.model ? String(config.model).split(/[\\/]/).pop() : '未配置模型'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                      {config?.model || '请在上方选择模型文件'}
+                    </div>
+                  </div>
+                </div>
+                <button className="outline-btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 32 }}>
+                  查看详细信息
+                </button>
+              </div>
             ))}
             {settingsCard('展示开关', '把网页端常见的显示项集中到一起。', (
               <div className="switch-grid">

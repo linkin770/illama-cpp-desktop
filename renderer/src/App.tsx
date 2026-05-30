@@ -56,6 +56,10 @@ function App() {
   const [sessionSkills, setSessionSkills] = useState<Record<string, Skill | null>>({})
   const selectedSkill = sessionSkills[state.currentSessionId] || null
   const [systemPromptModalOpen, setSystemPromptModalOpen] = useState(false)
+  
+  // 监听服务状态变化，用于模型切换后的重启提示
+  const prevServerRunningRef = useRef(false)
+  const isRestartingForModelSwitch = useRef(false)
 
   const currentTheme = useMemo(() => ({
     ...themeConfig,
@@ -131,6 +135,35 @@ function App() {
       setBusy(false);
     }
   }, [setBusy, patchFromBackend, setToast]);
+
+  // 重启 llama-server 服务（先停止再启动）
+  const restartServer = useCallback(async () => {
+    isRestartingForModelSwitch.current = true // 标记正在为模型切换重启
+    setBusy(true);
+    try {
+      // 先停止当前服务
+      await window.llamaDesktop.stopServer();
+      // 等待一小段时间确保服务完全停止
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // 使用新配置重新启动
+      const result = await window.llamaDesktop.startServer({ config: state.config });
+      patchFromBackend({
+        config: result.config,
+        validation: result.validation,
+        status: result.status,
+        logs: result.logs,
+        launch: result.launch,
+      });
+    }
+    catch (error) {
+      setToast((error as Error).message || String(error));
+      isRestartingForModelSwitch.current = false // 失败时清除标记
+      throw error;
+    }
+    finally {
+      setBusy(false);
+    }
+  }, [state.config, setBusy, patchFromBackend, setToast]);
 
   // 打开模型信息面板
   const openModelInfo = useCallback(async () => {
@@ -220,9 +253,8 @@ function App() {
     setChatBusy(true);
     const attachments = state.attachments;
     
-    // 获取当前会话
-    const currentSession = state.sessions.find(s => s.id === state.currentSessionId);
-    const sessionPrompt = currentSession?.systemPrompt;
+    // 获取当前会话的系统提示词（使用 currentSessionPrompt 而不是从 sessions 中查找）
+    const sessionPrompt = currentSessionPrompt;
     
     // 优先级：会话提示词 > 技能
     let systemMessage: ChatMessage | null = null;
@@ -317,7 +349,7 @@ function App() {
       setChatBusy(false);
       setStreamRequestId('');
     }
-  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, selectedSkill, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
+  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, selectedSkill, currentSessionPrompt, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
 
   // 中止当前聊天
   const abortChat = useCallback(async () => {
@@ -393,9 +425,8 @@ function App() {
       currentVariantIndex: existingVariants.length,
     };
     
-    // 获取当前会话
-    const currentSession = state.sessions.find(s => s.id === state.currentSessionId);
-    const sessionPrompt = currentSession?.systemPrompt;
+    // 获取当前会话的系统提示词（使用 currentSessionPrompt 而不是从 sessions 中查找）
+    const sessionPrompt = currentSessionPrompt;
     
     // 优先级：会话提示词 > 技能
     let systemMessage: ChatMessage | null = null;
@@ -653,6 +684,23 @@ function App() {
     chatMessagesRef.current = state.chatMessages;
   });
 
+  // 监听服务状态变化，用于模型切换后的重启提示
+  useEffect(() => {
+    const isCurrentlyRunning = state.status.state === 'running'
+    
+    // 检测服务从非运行状态变为运行状态
+    if (isCurrentlyRunning && !prevServerRunningRef.current) {
+      // 如果是为模型切换而重启，显示成功提示
+      if (isRestartingForModelSwitch.current) {
+        setToast('服务已重启，新模型已加载')
+        isRestartingForModelSwitch.current = false // 清除标记
+      }
+    }
+    
+    // 更新上一次的状态
+    prevServerRunningRef.current = isCurrentlyRunning
+  }, [state.status.state, setToast])
+
   // 监听来自主进程的事件（状态更新、日志、流式消息）
   useEffect(() => {
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -765,11 +813,15 @@ function App() {
             onNextVariant={nextVariant}
             systemPrompt={currentSessionPrompt}
             onOpenSystemPromptModal={openSystemPromptModal}
+            onUpdateConfig={updateConfig}
+            onSetToast={setToast}
+            onRestartServer={restartServer}
+            isServerRunning={state.status.state === 'running'}
           />
         )}
       </main>
 
-      <SettingsPanel settingsOpen={state.settingsOpen} active={state.active} config={state.config} validation={state.validation} status={state.status} logs={state.logs} dirty={state.dirty} launch={state.launch} onClose={() => setSettingsOpen(false)} onSelectSection={setActive} onUpdateConfig={updateConfig} onPickFile={pickFile} onCopyLaunchCommand={() => { const preview = (state.launch as Record<string, string>).preview; if (preview) { navigator.clipboard.writeText(preview); setToast('命令已复制'); } }}/>
+      <SettingsPanel settingsOpen={state.settingsOpen} active={state.active} config={state.config} validation={state.validation} status={state.status} logs={state.logs} dirty={state.dirty} launch={state.launch} onClose={() => setSettingsOpen(false)} onSelectSection={setActive} onUpdateConfig={updateConfig} onPickFile={pickFile} onCopyLaunchCommand={() => { const preview = (state.launch as Record<string, string>).preview; if (preview) { navigator.clipboard.writeText(preview); setToast('命令已复制'); } }} onOpenModelInfo={openModelInfo}/>
 
       <ModelInfoModal modelInfoOpen={state.modelInfoOpen} modelInfo={state.modelInfo} onClose={() => setModelInfoOpen(false)}/>
 

@@ -12,6 +12,8 @@ export interface LlamaDesktopAPI {
   getModelInfo(opts: { config: Record<string, unknown> | null }): Promise<Record<string, unknown>>
   // 选择附件文件
   pickAttachments(opts: { kind: string }): Promise<Attachment[]>
+  // 扫描 models 文件夹中的模型
+  scanModels(): Promise<{ models: Array<{ name: string; path: string; mmprojPath: string | null; hasVision: boolean }>; error: string | null }>
   // 选择单个文件
   pickFile(opts?: { properties?: string[]; filters?: Array<{ name: string; extensions: string[] }> }): Promise<string | null>
   // 流式对话请求

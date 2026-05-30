@@ -131,6 +131,28 @@
   white-space: nowrap;
   min-width: 0;
   border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.model-chip:hover {
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.model-chip-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.model-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .composer-hint {
