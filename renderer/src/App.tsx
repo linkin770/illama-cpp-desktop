@@ -7,7 +7,8 @@ import { useAppState } from './hooks/useAppState';
 import { ChatScreen } from './components/ChatScreen';
 import { Sidebar } from './components/Sidebar';
 import { TabBar } from './components/TabBar';
-import { TerminalPanel } from './components/TerminalPanel';
+import { TerminalPanel } from './components/TerminalPanel'
+import { KnowledgeBasePanel } from './components/KnowledgeBasePanel'
 import { SettingsPanel } from './components/SettingsPanel';
 import { ModelInfoModal } from './components/ModelInfoModal';
 import { SystemPromptModal } from './components/SystemPromptModal';
@@ -280,6 +281,22 @@ function App() {
         localOnly: true,
       };
     }
+    
+    // 如果启用了知识库，检索相关内容并注入
+    let knowledgeContext = '';
+    if (state.knowledgeEnabled && state.knowledgeDocuments.some(d => d.status === 'ready')) {
+      try {
+        const searchResult = await window.llamaDesktop.searchKnowledge(content, { topK: 3 })
+        if (searchResult.results && searchResult.results.length > 0) {
+          knowledgeContext = '\n\n【知识库参考】\n' + 
+            searchResult.results.map((r, idx) => 
+              `来源：${r.chunk.documentName}\n${r.chunk.content}`
+            ).join('\n\n---\n\n')
+        }
+      } catch (error) {
+        console.error('知识库检索失败:', error)
+      }
+    }
     // 创建用户消息
     const userMessage: ChatMessage = {
       role: 'user',
@@ -287,6 +304,22 @@ function App() {
       attachments,
       createdAt: Date.now(),
     };
+    
+    // 如果有知识库内容，注入到 system message
+    if (knowledgeContext && systemMessage) {
+      systemMessage = {
+        ...systemMessage,
+        content: systemMessage.content + knowledgeContext,
+      };
+    } else if (knowledgeContext && !systemMessage) {
+      // 如果没有 system prompt，创建一个
+      systemMessage = {
+        role: 'system',
+        content: '请根据以下知识库内容回答用户的问题：' + knowledgeContext,
+        createdAt: Date.now(),
+        localOnly: true,
+      };
+    }
     // 生成请求 ID
     const requestId = `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     // 创建助手消息（占位符）
@@ -349,7 +382,7 @@ function App() {
       setChatBusy(false);
       setStreamRequestId('');
     }
-  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, selectedSkill, currentSessionPrompt, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
+  }, [state.attachments, state.chatBusy, state.config, state.chatMessages, selectedSkill, currentSessionPrompt, state.knowledgeEnabled, state.knowledgeDocuments, setChatBusy, addChatMessage, setStreamRequestId, updateChatInput, clearAttachments, setView, saveCurrentSession, updateChatMessage, setChatMessages, setToast]);
 
   // 中止当前聊天
   const abortChat = useCallback(async () => {
@@ -782,14 +815,18 @@ function App() {
       theme={currentTheme}
     >
     <div className={`app-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} busy={state.busy} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)} onSave={save} onStart={start} onStop={stop}/>
+      <Sidebar sessions={state.sessions} currentSessionId={state.currentSessionId} historySearch={state.historySearch} historyMenuId={state.historyMenuId} sidebarCollapsed={state.sidebarCollapsed} view={state.view} chatMessages={state.chatMessages} status={state.status} settingsOpen={state.settingsOpen} busy={state.busy} onNewChat={startFreshSession} onFocusChat={() => setView('chat')} onShowTerminal={() => setView('terminal')} onShowKnowledgeBase={() => setView('knowledge')} onSearchChange={setHistorySearch} onOpenSession={openSession} onToggleHistoryMenu={(id) => setHistoryMenuId(state.historyMenuId === id ? '' : id)} onEditSession={editSession} onExportSession={exportSession} onDeleteSession={removeSession} onToggleSettings={() => setSettingsOpen(!state.settingsOpen)} onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)} onSave={save} onStart={start} onStop={stop}/>
 
       <main className="main-area">
         <HeaderBar 
           sidebarCollapsed={state.sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed(!state.sidebarCollapsed)}
         />
-        {state.view === 'terminal' ? (<TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>) : (
+        {state.view === 'terminal' ? (
+          <TerminalPanel logs={state.logs} onReturnChat={() => setView('chat')}/>
+        ) : state.view === 'knowledge' ? (
+          <KnowledgeBasePanel onReturnChat={() => setView('chat')}/>
+        ) : (
           <ChatScreen 
             chatMessages={state.chatMessages} 
             chatInput={state.chatInput} 

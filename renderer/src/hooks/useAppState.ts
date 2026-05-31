@@ -1,6 +1,6 @@
 // 应用状态管理 Hook - 管理整个应用的状态和交互
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { AppState, Config, ChatMessage, Session } from '../types'
+import type { AppState, Config, ChatMessage, Session, KnowledgeDocument } from '../types'
 
 // 默认应用状态
 const defaultState: AppState = {
@@ -34,6 +34,9 @@ const defaultState: AppState = {
   settingsOpen: false,
   toast: '',
   stickToBottom: true,
+  knowledgeDocuments: [],
+  knowledgeEnabled: false,
+  knowledgeLoading: false,
 }
 
 // localStorage 会话存储的键名
@@ -43,7 +46,13 @@ const SESSIONS_KEY = 'llama.cpp.desktop.sessions'
 function loadSessions(): Session[] {
   try {
     const saved = JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]')
-    return Array.isArray(saved) ? saved : []
+    if (!Array.isArray(saved)) return []
+    
+    // 向后兼容：为旧数据补充 createdAt 字段
+    return saved.map(session => ({
+      ...session,
+      createdAt: session.createdAt || session.updatedAt || Date.now(),
+    }))
   } catch {
     return []
   }
@@ -114,6 +123,7 @@ export function useAppState() {
         id: prev.currentSessionId,
         title: titleFromMessages(prev.chatMessages),
         messages: prev.chatMessages,
+        createdAt: currentSession?.createdAt || now, // 保留创建时间
         updatedAt: now,
         systemPrompt: currentSession?.systemPrompt, // 保留 systemPrompt
       }
@@ -141,10 +151,12 @@ export function useAppState() {
       const now = Date.now()
       let sessions = prev.sessions
       if (prev.currentSessionId === tabId && prev.chatMessages.length > 0) {
+        const currentSessionData = sessions.find(s => s.id === prev.currentSessionId)
         const current: Session = {
           id: prev.currentSessionId,
           title: titleFromMessages(prev.chatMessages),
           messages: prev.chatMessages,
+          createdAt: currentSessionData?.createdAt || now, // 保留创建时间
           updatedAt: now,
         }
         const idx = sessions.findIndex(s => s.id === prev.currentSessionId)
@@ -220,6 +232,7 @@ export function useAppState() {
           id: prev.currentSessionId,
           title: titleFromMessages(prev.chatMessages),
           messages: prev.chatMessages,
+          createdAt: currentSessionData?.createdAt || now, // 保留创建时间
           updatedAt: now,
           systemPrompt: currentSessionData?.systemPrompt, // 保留 systemPrompt
         }
@@ -279,6 +292,7 @@ export function useAppState() {
           id: newId,
           title: '新聊天',
           messages: [],
+          createdAt: Date.now(),
           updatedAt: Date.now(),
         }, ...prev.sessions]
         persistSessions(updatedSessions)
@@ -548,6 +562,19 @@ export function useAppState() {
     setBusy,
     setStatus,
     setLogs,
+    // 知识库管理
+    setKnowledgeDocuments: (docs: KnowledgeDocument[] | ((prev: KnowledgeDocument[]) => KnowledgeDocument[])) => {
+      setState(prev => ({
+        ...prev,
+        knowledgeDocuments: typeof docs === 'function' ? docs(prev.knowledgeDocuments) : docs,
+      }))
+    },
+    setKnowledgeEnabled: (enabled: boolean) => {
+      setState(prev => ({ ...prev, knowledgeEnabled: enabled }))
+    },
+    setKnowledgeLoading: (loading: boolean) => {
+      setState(prev => ({ ...prev, knowledgeLoading: loading }))
+    },
   }
 }
 

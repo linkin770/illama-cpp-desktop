@@ -20,6 +20,11 @@ contextBridge.exposeInMainWorld('llamaDesktop', {
   generateSkillContent: payload => ipcRenderer.invoke("llama:skill-generate", payload),
   readSkill: payload => ipcRenderer.invoke("llama:skill-read", payload),
   deleteSkill: payload => ipcRenderer.invoke("llama:skill-delete", payload),
+  // 知识库管理
+  listDocuments: () => ipcRenderer.invoke('llama:list-documents'),
+  uploadDocument: filePath => ipcRenderer.invoke('llama:upload-document', filePath),
+  deleteDocument: docId => ipcRenderer.invoke('llama:delete-document', docId),
+  searchKnowledge: (query, opts) => ipcRenderer.invoke('llama:search-knowledge', query, opts),
   closeWindow: () => ipcRenderer.send('llama:window-close'),
   minimizeWindow: () => ipcRenderer.send('llama:window-minimize'),
   maximizeWindow: () => ipcRenderer.send('llama:window-maximize'),

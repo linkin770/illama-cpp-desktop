@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo } from 'react'
 import { Conversations } from '@ant-design/x'
 import type { MenuProps } from 'antd'
-import { EditOutlined, DownloadOutlined, DeleteOutlined, MessageOutlined, SettingOutlined, SearchOutlined, CodeOutlined } from '@ant-design/icons'
+import { EditOutlined, DownloadOutlined, DeleteOutlined, MessageOutlined, SettingOutlined, SearchOutlined, CodeOutlined, DatabaseOutlined } from '@ant-design/icons'
 import type { Session, Status } from '../types'
 import { escapeHtml, statusLabel, statusClass, shortTime } from '../utils'
 
@@ -19,6 +19,7 @@ interface SidebarProps {
   onNewChat: () => void
   onFocusChat: () => void
   onShowTerminal: () => void
+  onShowKnowledgeBase: () => void
   onSearchChange: (value: string) => void
   onOpenSession: (sessionId: string) => void
   onToggleHistoryMenu: (sessionId: string) => void
@@ -59,6 +60,7 @@ export function Sidebar({
   onNewChat,
   onFocusChat,
   onShowTerminal,
+  onShowKnowledgeBase,
   onSearchChange,
   onOpenSession,
   onToggleHistoryMenu,
@@ -70,6 +72,7 @@ export function Sidebar({
   onStart,
   onStop,
 }: SidebarProps) {
+
   const filteredSessions = sessions
     .filter(session => !historySearch || String(session.title || '').toLowerCase().includes(historySearch.toLowerCase()))
     .slice(0, 28)
@@ -87,14 +90,14 @@ export function Sidebar({
   const conversationItems = useMemo(() => {
     return filteredSessions.map(session => ({
       key: session.id,
-      group: getTimeGroup(session.updatedAt),
+      group: getTimeGroup(session.createdAt),
       label: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
             {escapeHtml(session.title || '新聊天')}
           </span>
           <span style={{ fontSize: 11, opacity: 0.6 }}>
-            {escapeHtml(shortTime(new Date(session.updatedAt)))}
+            {escapeHtml(shortTime(new Date(session.createdAt)))}
           </span>
         </div>
       ),
@@ -205,6 +208,30 @@ export function Sidebar({
       </div>
 
       <div className="side-bottom">
+        <button
+          type="button"
+          className="settings-btn"
+          data-action="toggle-knowledge-base"
+          title="知识库"
+          onClick={onShowKnowledgeBase}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            background: 'none',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+            color: 'var(--ink)',
+            fontSize: 13,
+            width: '100%',
+            marginBottom: 8,
+          }}
+        >
+          <DatabaseOutlined />
+          <span>知识库</span>
+        </button>
         <button
           type="button"
           className={`settings-btn ${settingsOpen ? 'active' : ''}`}

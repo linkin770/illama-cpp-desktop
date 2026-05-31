@@ -28,6 +28,11 @@ export interface LlamaDesktopAPI {
   generateSkillContent(payload: { name: string; description?: string; whenToUse?: string; argumentHint?: string }): Promise<{ ok: boolean; content: string }>
   readSkill(payload: { name: string }): Promise<Skill & { raw: string }>
   deleteSkill(payload: { name: string }): Promise<{ ok: boolean }>
+  // 知识库管理
+  listDocuments(): Promise<{ documents: KnowledgeDocument[] }>
+  uploadDocument(filePath: string): Promise<{ ok: boolean; document?: KnowledgeDocument; error?: string }>
+  deleteDocument(docId: string): Promise<{ ok: boolean; error?: string }>
+  searchKnowledge(query: string, opts?: { topK?: number }): Promise<{ results: KnowledgeSearchResult[]; error?: string }>
   // 监听来自主进程的事件
   onEvent(handler: (payload: unknown) => void): () => void
   // 设置主题
@@ -182,8 +187,36 @@ export interface Session {
   id: string // 会话 ID
   title: string // 会话标题
   messages: ChatMessage[] // 消息列表
+  createdAt: number // 创建时间戳
   updatedAt: number // 更新时间戳
   systemPrompt?: string // 会话级系统提示词（可选）
+}
+
+// 知识库文档类型
+export interface KnowledgeDocument {
+  id: string // 文档 ID
+  name: string // 文件名
+  path: string // 文件路径
+  size: number // 文件大小（字节）
+  uploadedAt: number // 上传时间戳
+  status: 'pending' | 'processing' | 'ready' | 'error' // 文档状态
+  chunkCount?: number // 分块数量
+  errorMessage?: string // 错误信息（如果状态为 error）
+}
+
+// 知识库文本块类型
+export interface KnowledgeChunk {
+  id: string // 文本块 ID
+  documentId: string // 所属文档 ID
+  documentName: string // 文档名称
+  content: string // 文本内容
+  index: number // 在文档中的索引
+}
+
+// 知识库搜索结果
+export interface KnowledgeSearchResult {
+  chunk: KnowledgeChunk // 匹配的文本块
+  score: number // 相似度分数
 }
 
 // 应用状态类型 - 管理整个应用的状态
@@ -194,7 +227,7 @@ export interface AppState {
   launch: Record<string, unknown> // 启动详情
   status: Status // 服务状态
   logs: LogEntry[] // 日志列表
-  view: 'chat' | 'terminal' // 当前视图（聊天或终端）
+  view: 'chat' | 'terminal' | 'knowledge' // 当前视图（聊天、终端或知识库）
   sidebarPanel: string // 侧边栏面板
   sidebarCollapsed: boolean // 侧边栏是否折叠
   sessions: Session[] // 会话列表
@@ -218,6 +251,10 @@ export interface AppState {
   settingsOpen: boolean // 设置面板是否打开
   toast: string // Toast 提示消息
   stickToBottom: boolean // 是否自动滚动到底部
+  // 知识库状态
+  knowledgeDocuments: KnowledgeDocument[] // 知识库文档列表
+  knowledgeEnabled: boolean // 是否启用知识库
+  knowledgeLoading: boolean // 知识库是否加载中
 }
 
 // 设置面板分区 ID 类型
